@@ -72,7 +72,7 @@ namespace OpenBox.Home
             }
             var app = (AppEntry)e.ClickedItem;
             _focusedIndex = Math.Max(0, _apps.IndexOf(app));
-            App.Open(app);
+            App.Open(AppLibrary.Latest(app));
         }
 
         bool IBackHandler.HandleBack()

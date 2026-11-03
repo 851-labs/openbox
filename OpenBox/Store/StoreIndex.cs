@@ -17,6 +17,19 @@ namespace OpenBox.Store
     {
         public const string IndexUrl = "https://raw.githubusercontent.com/851-labs/openbox/store/index.json";
 
+        /// <summary>Brings installed apps up to date with the store (a new address, say), in the background.</summary>
+        public static async void RefreshInstalled()
+        {
+            try
+            {
+                await AppLibrary.UpdateFromStoreAsync(await LoadAsync());
+            }
+            catch (Exception ex)
+            {
+                Log.Write("Checking the store for app updates failed: " + ex.Message);
+            }
+        }
+
         /// <summary>The store's apps, or an exception saying why they couldn't be loaded.</summary>
         public static async Task<List<AppEntry>> LoadAsync()
         {

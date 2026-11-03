@@ -17,15 +17,23 @@ namespace OpenBox.Apps
     {
         private const string FileName = "apps.json";
         private const string OrderKey = "homeOrder";
+        private static Task<List<AppEntry>> _loading;
         private static List<AppEntry> _installed;
 
         public static async Task<IReadOnlyList<AppEntry>> GetInstalledAsync()
         {
-            if (_installed == null)
+            if (_loading == null)
             {
-                _installed = await LoadAsync();
+                _loading = LoadAsync();
             }
+            _installed = await _loading;
             return _installed;
+        }
+
+        /// <summary>The installed app's current entry (the store may have updated it since its tile was shown).</summary>
+        public static AppEntry Latest(AppEntry app)
+        {
+            return _installed?.Find(existing => existing.Id == app.Id) ?? app;
         }
 
         /// <summary>
@@ -95,6 +103,7 @@ namespace OpenBox.Apps
                 {
                     _installed[index] = app;
                     changed = true;
+                    Log.Write("Updated " + app.Id + " from the store");
                 }
             }
             if (changed)

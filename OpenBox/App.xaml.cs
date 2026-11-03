@@ -4,6 +4,7 @@ using OpenBox.AdBlock;
 using OpenBox.Apps;
 using OpenBox.Diagnostics;
 using OpenBox.Home;
+using OpenBox.Store;
 using OpenBox.Web;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
@@ -72,6 +73,7 @@ namespace OpenBox
                 Window.Current.Activate();
                 // The ad filters take a moment to load: have them ready by the time an app opens.
                 AdFilters.Preload();
+                StoreIndex.RefreshInstalled();
             }
         }
 

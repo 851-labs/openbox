@@ -32,8 +32,11 @@ b64() {
 package_full_name() {
     portal "$XBOX_HOST/api/app/packagemanager/packages" |
         python3 -c 'import json, sys
-for p in json.load(sys.stdin)["InstalledPackages"]:
-    if p["PackageFullName"].startswith(sys.argv[1] + "_"): print(p["PackageFullName"])' "$PACKAGE_NAME"
+names = [p["PackageFullName"] for p in json.load(sys.stdin)["InstalledPackages"]
+         if p["PackageFullName"].startswith(sys.argv[1] + "_")]
+# Right after an update the old version can still be listed: the newest is the one.
+key = lambda n: [int(x) for x in n.split("_")[1].split(".")]
+print(max(names, key=key) if names else "")' "$PACKAGE_NAME"
 }
 
 case "${1:-}" in
