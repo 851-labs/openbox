@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "updated": "2026-10-16",
+  "comment": "openbox ad filters for YouTube, from TubeBox (sharktie/tubebox-uwp). The app checks this file on GitHub for a newer version, so ad blocking can be fixed without reinstalling. userAgent is the device YouTube's TV app is told it runs on (YouTube holds videos back for ad blockers on some devices and not others), pruneKeys are removed from every YouTube response, pruneItems drop any list entry with that key, blockUrls are refused before they leave the console.",
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; Xbox; Xbox Series X) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.82 Safari/537.36 Edge/20.02",
+  "pruneKeys": [
+    "adPlacements",
+    "adSlots",
+    "playerAds",
+    "adBreakHeartbeatParams"
+  ],
+  "pruneItems": [
+    "adSlotRenderer",
+    "adsControlFlowOpportunityReceivedCommand",
+    "promotedSparklesWebRenderer",
+    "promotedVideoRenderer",
+    "compactPromotedVideoRenderer",
+    "searchPyvRenderer",
+    "inFeedAdLayoutRenderer"
+  ],
+  "blockUrls": [
+    "*://*.doubleclick.net/*",
+    "*://*.googlesyndication.com/*",
+    "*://*.googleadservices.com/*",
+    "*://*.googletagservices.com/*",
+    "*://*.google-analytics.com/*",
+    "*://imasdk.googleapis.com/*",
+    "*://*.2mdn.net/*",
+    "*://www.youtube.com/pagead/*",
+    "*://www.youtube.com/api/stats/ads*",
+    "*://www.youtube.com/api/stats/*el=adunit*",
+    "*://www.youtube.com/ptracking*",
+    "*://www.youtube.com/pcs/activeview*",
+    "*://www.youtube.com/get_midroll_*"
+  ]
+}

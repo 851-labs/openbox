@@ -1,0 +1,49 @@
+<Page
+    x:Class="OpenBox.Home.HomePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:apps="using:OpenBox.Apps"
+    NavigationCacheMode="Required"
+    Background="{StaticResource ShellBackgroundBrush}">
+
+    <Page.Resources>
+        <Style x:Key="TileContainerStyle" TargetType="GridViewItem">
+            <Setter Property="Margin" Value="0,0,16,20" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="UseSystemFocusVisuals" Value="True" />
+            <Setter Property="FocusVisualMargin" Value="-5" />
+            <Setter Property="FocusVisualPrimaryBrush" Value="White" />
+            <Setter Property="FocusVisualPrimaryThickness" Value="3" />
+            <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+        </Style>
+    </Page.Resources>
+
+    <!-- 960x540 on the console (1080p at 200%), inside the TV-safe margins. -->
+    <Grid Padding="48,32,48,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Orientation="Horizontal" Spacing="10">
+            <Image Source="ms-appx:///Assets/Apps/openbox.png" Width="30" Height="30" />
+            <TextBlock Text="openbox" FontSize="24" FontWeight="SemiBold" VerticalAlignment="Center" />
+        </StackPanel>
+        <TextBlock x:Name="Clock" FontSize="20" Opacity="0.8" HorizontalAlignment="Right" VerticalAlignment="Center" />
+
+        <GridView x:Name="Tiles" Grid.Row="1" Margin="0,32,0,0" Padding="0,0,0,27"
+            SelectionMode="None" IsItemClickEnabled="True" ItemClick="Tiles_ItemClick"
+            ItemContainerStyle="{StaticResource TileContainerStyle}">
+            <GridView.ItemTemplate>
+                <DataTemplate x:DataType="apps:AppEntry">
+                    <StackPanel Width="198" Spacing="8">
+                        <Grid Height="111" CornerRadius="8" Background="{x:Bind Background}">
+                            <Image Source="{x:Bind IconImage}" Width="56" Height="56" />
+                        </Grid>
+                        <TextBlock Text="{x:Bind Name}" FontSize="15" Margin="2,0,2,4" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </DataTemplate>
+            </GridView.ItemTemplate>
+        </GridView>
+    </Grid>
+</Page>

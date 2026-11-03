@@ -1,0 +1,27 @@
+# Visual Studio / MSBuild
+.vs/
+*.user
+*.suo
+bin/
+obj/
+builds/
+AppPackages/
+BundleArtifacts/
+OpenBox/Generated Files/
+*.pfx
+*.appx
+*.msix
+*.appxbundle
+*.msixbundle
+packages/
+project.lock.json
+
+# Store index build output
+_site/
+
+# Python
+__pycache__/
+
+# OS
+Thumbs.db
+.DS_Store

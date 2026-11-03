@@ -1,0 +1,7 @@
+{
+  "name": "Lichess",
+  "description": "Free, open source chess.",
+  "url": "https://lichess.org",
+  "icon": "icons/lichess.png",
+  "color": "#161512"
+}

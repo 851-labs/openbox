@@ -1,0 +1,24 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34728.123
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenBox", "OpenBox\OpenBox.csproj", "{30FE2970-25B9-443E-AAE2-BE11103F8FAC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{30FE2970-25B9-443E-AAE2-BE11103F8FAC}.Debug|x64.ActiveCfg = Debug|x64
+		{30FE2970-25B9-443E-AAE2-BE11103F8FAC}.Debug|x64.Build.0 = Debug|x64
+		{30FE2970-25B9-443E-AAE2-BE11103F8FAC}.Debug|x64.Deploy.0 = Debug|x64
+		{30FE2970-25B9-443E-AAE2-BE11103F8FAC}.Release|x64.ActiveCfg = Release|x64
+		{30FE2970-25B9-443E-AAE2-BE11103F8FAC}.Release|x64.Build.0 = Release|x64
+		{30FE2970-25B9-443E-AAE2-BE11103F8FAC}.Release|x64.Deploy.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

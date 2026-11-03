@@ -1,0 +1,29 @@
+<Page
+    x:Class="OpenBox.Web.WebAppPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Microsoft.UI.Xaml.Controls"
+    Background="Black">
+
+    <Grid Background="Black">
+        <controls:WebView2 x:Name="WebView" />
+
+        <!-- Until the app's first page has loaded: its tile, full screen. -->
+        <Grid x:Name="Splash">
+            <Image x:Name="SplashIcon" Width="96" Height="96" />
+            <controls:ProgressRing x:Name="SplashRing" IsActive="True" Width="28" Height="28" Margin="0,0,0,72"
+                VerticalAlignment="Bottom" Foreground="White" />
+        </Grid>
+
+        <Grid x:Name="LoadErrorPanel" Background="#FF111114" Visibility="Collapsed">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="560" Padding="24" Spacing="16">
+                <TextBlock x:Name="LoadErrorTitle" FontSize="28" Foreground="White" HorizontalAlignment="Center" />
+                <TextBlock x:Name="LoadErrorText" Foreground="#B3FFFFFF" TextWrapping="Wrap" TextAlignment="Center" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12">
+                    <Button x:Name="RetryButton" Content="Retry" MinWidth="160" Click="RetryButton_Click" />
+                    <Button Content="Home" MinWidth="160" Click="HomeButton_Click" />
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Page>

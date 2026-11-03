@@ -1,0 +1,7 @@
+{
+  "name": "Twitch",
+  "description": "Live streams, mostly of games.",
+  "url": "https://www.twitch.tv",
+  "icon": "icons/twitch.png",
+  "color": "#9146FF"
+}

@@ -1,0 +1,100 @@
+name: App
+
+on:
+  push:
+    paths-ignore: ['apps/**', '**.md']
+  pull_request:
+    paths-ignore: ['apps/**', '**.md']
+  workflow_dispatch:
+
+jobs:
+  scripts:
+    name: Check page scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax check
+        run: |
+          # The scripts added to web pages have no build step; make sure each at least parses.
+          # From stdin in strict (module) mode, since `node --check file.js` can pass a broken file.
+          for file in OpenBox/Web/Inject/*.js OpenBox/YouTube/Inject/*.js; do
+            node --input-type=module --check < "$file" || { echo "::error file=$file::Syntax error"; exit 1; }
+          done
+          node -e 'JSON.parse(require("fs").readFileSync("OpenBox/YouTube/Inject/filters.json", "utf8"))'
+
+  package:
+    name: Package
+    needs: scripts
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: microsoft/setup-msbuild@v3
+
+      - name: Set package version
+        shell: pwsh
+        run: |
+          $manifest = Resolve-Path 'OpenBox\Package.appxmanifest'
+          [xml]$xml = Get-Content $manifest -Raw
+          # Major and minor from the manifest, then the run number: always increasing, so a newer
+          # build installs over an older one.
+          $base = [version]$xml.Package.Identity.Version
+          $version = "$($base.Major).$($base.Minor).$env:GITHUB_RUN_NUMBER.0"
+          $xml.Package.Identity.Version = $version
+          $xml.Save($manifest)
+          "Version: $version"
+
+      - name: Create signing certificate
+        shell: pwsh
+        run: |
+          # Self-signed; the subject must match Publisher in Package.appxmanifest.
+          $cert = New-SelfSignedCertificate -Type Custom -Subject 'CN=openbox' `
+            -KeyUsage DigitalSignature -FriendlyName 'openbox sideload' `
+            -CertStoreLocation 'Cert:\CurrentUser\My' `
+            -TextExtension @('2.5.29.37={text}1.3.6.1.5.5.7.3.3', '2.5.29.19={text}')
+          "CERT_THUMBPRINT=$($cert.Thumbprint)" >> $env:GITHUB_ENV
+
+      - name: Build package
+        shell: pwsh
+        run: >
+          msbuild OpenBox\OpenBox.csproj -restore -m -nologo -v:minimal
+          /p:Configuration=Release
+          /p:Platform=x64
+          /p:AppxBundle=Never
+          /p:UapAppxPackageBuildMode=SideloadOnly
+          /p:GenerateAppxPackageOnBuild=true
+          /p:AppxPackageDir=$env:GITHUB_WORKSPACE\AppPackages\
+          /p:AppxPackageSigningEnabled=true
+          /p:PackageCertificateThumbprint=$env:CERT_THUMBPRINT
+
+      - name: Collect install files
+        # What Device Portal needs: the app, and its x64 dependency packages in Dependencies.
+        shell: pwsh
+        run: |
+          $test = Get-ChildItem AppPackages -Directory -Filter '*_Test' | Select-Object -First 1
+          $app = @(Get-ChildItem $test.FullName -Filter *.msix)
+          $dependencies = @(Get-ChildItem (Join-Path $test.FullName 'Dependencies\x64') -Filter *.appx)
+          if ($app.Count -ne 1 -or $dependencies.Count -eq 0) {
+            throw "Expected the app and its dependencies, found: $(($app + $dependencies).Name -join ', ')"
+          }
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $zip = [IO.Compression.ZipFile]::OpenRead($app[0].FullName)
+          try { $entries = $zip.Entries | ForEach-Object { $_.FullName } } finally { $zip.Dispose() }
+          $required = @('Web/Inject/prelude.js', 'Web/Inject/remote.js', 'YouTube/Inject/adblock.js',
+            'YouTube/Inject/upgrade.js', 'YouTube/Inject/filters.json', 'Assets/Apps/youtube.png')
+          $missing = $required | Where-Object { $entries -notcontains $_ }
+          if ($missing) { throw "Missing from package: $($missing -join ', ')" }
+          New-Item -ItemType Directory release\Dependencies -Force | Out-Null
+          $app | Copy-Item -Destination release
+          $dependencies | Copy-Item -Destination release\Dependencies
+          "::notice title=Package::$($app[0].Name) ($([math]::Round($app[0].Length / 1MB, 1)) MB) with $($dependencies.Count) dependencies"
+          Get-ChildItem release -Recurse -File | ForEach-Object { $_.FullName.Substring($PWD.Path.Length + 1) }
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: openbox-x64
+          path: release/
+          if-no-files-found: error
