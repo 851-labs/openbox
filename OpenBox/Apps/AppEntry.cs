@@ -1,4 +1,5 @@
 using System;
+using OpenBox.Packages;
 using OpenBox.Web;
 using Windows.Data.Json;
 using Windows.UI;
@@ -8,9 +9,12 @@ using Windows.UI.Xaml.Media.Imaging;
 namespace OpenBox.Apps
 {
     /// <summary>
-    /// One app on the homescreen. Either a web app (<see cref="Url"/>), shown full screen in
-    /// <see cref="WebAppPage"/>, or a native app built into openbox (<see cref="PageType"/>), which
-    /// is a XAML page of its own. Store apps are always web apps.
+    /// One app on the homescreen. One of:
+    ///  - a web app (<see cref="Url"/>), shown full screen in <see cref="WebAppPage"/>;
+    ///  - a native app built into openbox (<see cref="PageType"/>), a XAML page of its own;
+    ///  - an app package of its own (<see cref="Package"/>), which the Store installs on the console
+    ///    and the tile launches (Minecraft, through Bandit Launcher).
+    /// Store apps are web apps or packages.
     /// </summary>
     public sealed class AppEntry
     {
@@ -38,6 +42,20 @@ namespace OpenBox.Apps
         public bool RemoteInput { get; private set; }
         /// <summary>What a built-in web app adds to its pages (YouTube's ad blocking, say).</summary>
         internal Func<IWebAppExtension> CreateExtension { get; private set; }
+
+        /// <summary>The app package a package app installs, or null.</summary>
+        internal AppPackage Package { get; private set; }
+        public bool IsPackage
+        {
+            get { return Package != null; }
+        }
+
+        /// <summary>Who made it, with a link, where their terms ask for that. Shown in the Store.</summary>
+        public string Credit { get; private set; }
+        public bool HasCredit
+        {
+            get { return !string.IsNullOrEmpty(Credit); }
+        }
 
         public SolidColorBrush Background
         {
@@ -82,23 +100,36 @@ namespace OpenBox.Apps
             var id = GetString(json, "id");
             var name = GetString(json, "name");
             var url = GetString(json, "url");
-            Uri uri;
-            if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(name) ||
-                !Uri.TryCreate(url, UriKind.Absolute, out uri) || uri.Scheme != Uri.UriSchemeHttps)
-            {
-                return null;
-            }
-            return new AppEntry
+            var package = json.GetNamedValue("package", JsonValue.CreateNullValue());
+            var app = new AppEntry
             {
                 Id = id,
                 Name = name,
                 Description = GetString(json, "description") ?? string.Empty,
                 Icon = GetString(json, "icon"),
                 Color = ParseColor(GetString(json, "color")),
-                Url = url,
-                UserAgent = GetString(json, "userAgent"),
-                RemoteInput = GetString(json, "input") == "remote",
+                Credit = GetString(json, "credit"),
             };
+            if (package.ValueType == JsonValueType.Object)
+            {
+                app.Package = AppPackage.FromJson(package.GetObject());
+                if (app.Package == null)
+                {
+                    return null;
+                }
+            }
+            else
+            {
+                Uri uri;
+                if (!Uri.TryCreate(url, UriKind.Absolute, out uri) || uri.Scheme != Uri.UriSchemeHttps)
+                {
+                    return null;
+                }
+                app.Url = url;
+                app.UserAgent = GetString(json, "userAgent");
+                app.RemoteInput = GetString(json, "input") == "remote";
+            }
+            return string.IsNullOrEmpty(id) || string.IsNullOrEmpty(name) ? null : app;
         }
 
         internal JsonObject ToJson()
@@ -107,9 +138,20 @@ namespace OpenBox.Apps
             json.SetNamedValue("id", JsonValue.CreateStringValue(Id));
             json.SetNamedValue("name", JsonValue.CreateStringValue(Name));
             json.SetNamedValue("description", JsonValue.CreateStringValue(Description ?? string.Empty));
-            json.SetNamedValue("url", JsonValue.CreateStringValue(Url));
             json.SetNamedValue("color", JsonValue.CreateStringValue(string.Format("#{0:X2}{1:X2}{2:X2}", Color.R, Color.G, Color.B)));
-            json.SetNamedValue("input", JsonValue.CreateStringValue(RemoteInput ? "remote" : "pointer"));
+            if (Package != null)
+            {
+                json.SetNamedValue("package", Package.ToJson());
+            }
+            else
+            {
+                json.SetNamedValue("url", JsonValue.CreateStringValue(Url));
+                json.SetNamedValue("input", JsonValue.CreateStringValue(RemoteInput ? "remote" : "pointer"));
+            }
+            if (Credit != null)
+            {
+                json.SetNamedValue("credit", JsonValue.CreateStringValue(Credit));
+            }
             if (Icon != null)
             {
                 json.SetNamedValue("icon", JsonValue.CreateStringValue(Icon));
@@ -132,7 +174,7 @@ namespace OpenBox.Apps
             return Color.FromArgb(255, 42, 45, 58);
         }
 
-        private static string GetString(JsonObject json, string name)
+        internal static string GetString(JsonObject json, string name)
         {
             var value = json.GetNamedValue(name, JsonValue.CreateNullValue());
             return value.ValueType == JsonValueType.String ? value.GetString() : null;

@@ -6,6 +6,12 @@ on:
   pull_request:
     paths-ignore: ['apps/**', '**.md']
   workflow_dispatch:
+    inputs:
+      configuration:
+        description: Release to install, or Debug for dev commands (Diagnostics/DevCommands.cs)
+        type: choice
+        options: [Release, Debug]
+        default: Release
 
 jobs:
   scripts:
@@ -29,6 +35,8 @@ jobs:
     name: Package
     needs: scripts
     runs-on: windows-2022
+    env:
+      CONFIGURATION: ${{ inputs.configuration || 'Release' }}
     steps:
       - uses: actions/checkout@v6
 
@@ -66,7 +74,7 @@ jobs:
         shell: pwsh
         run: >
           msbuild OpenBox\OpenBox.csproj -restore -m -nologo -v:minimal
-          /p:Configuration=Release
+          /p:Configuration=$env:CONFIGURATION
           /p:Platform=x64
           /p:AppxBundle=Never
           /p:UapAppxPackageBuildMode=SideloadOnly
@@ -101,6 +109,6 @@ jobs:
 
       - uses: actions/upload-artifact@v6
         with:
-          name: openbox-x64
+          name: ${{ env.CONFIGURATION == 'Release' && 'openbox-x64' || 'openbox-x64-debug' }}
           path: release/
           if-no-files-found: error

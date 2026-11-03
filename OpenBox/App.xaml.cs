@@ -4,6 +4,7 @@ using OpenBox.AdBlock;
 using OpenBox.Apps;
 using OpenBox.Diagnostics;
 using OpenBox.Home;
+using OpenBox.Packages;
 using OpenBox.Store;
 using OpenBox.Web;
 using Windows.ApplicationModel;
@@ -87,13 +88,30 @@ namespace OpenBox
                 // The ad filters take a moment to load: have them ready by the time an app opens.
                 AdFilters.Preload();
                 StoreIndex.RefreshInstalled();
+#if DEBUG
+                DevCommands.Start();
+#endif
             }
         }
 
         /// <summary>Opens an app from the homescreen.</summary>
-        internal static void Open(AppEntry app)
+        internal static async void Open(AppEntry app)
         {
-            _frame.Navigate(app.PageType ?? typeof(WebAppPage), app);
+            if (!app.IsPackage)
+            {
+                _frame.Navigate(app.PageType ?? typeof(WebAppPage), app);
+                return;
+            }
+            // An app of its own: the console switches to it, and openbox stays where it is.
+            if (!await PackageApps.LaunchAsync(app))
+            {
+                await new ContentDialog
+                {
+                    Title = "Couldn't open " + app.Name,
+                    Content = "It isn't installed on this console any more. Uninstall it from the homescreen and install it again from the Store.",
+                    CloseButtonText = "OK",
+                }.ShowAsync();
+            }
         }
 
         /// <summary>Back to the homescreen, from wherever.</summary>

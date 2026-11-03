@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Linq;
 using OpenBox.Apps;
 using OpenBox.Diagnostics;
+using OpenBox.Packages;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
@@ -10,8 +11,9 @@ using Windows.UI.Xaml.Navigation;
 namespace OpenBox.Store
 {
     /// <summary>
-    /// The store's apps. A adds one to the homescreen, or offers to remove it if it's there. The
-    /// Store is part of openbox, not an app, so B is plain back navigation: it goes home.
+    /// The store's apps. A adds one to the homescreen (a package app is downloaded and installed
+    /// on the console first), or offers to uninstall it if it's there. The Store is part of
+    /// openbox, not an app, so B is plain back navigation: it goes home.
     /// </summary>
     public sealed partial class StorePage : Page, IBackHandler
     {
@@ -20,7 +22,7 @@ namespace OpenBox.Store
         public StorePage()
         {
             this.InitializeComponent();
-            Hints.Show("A", "Add or remove", "B", "Back");
+            Hints.Show("A", "Install or uninstall", "B", "Back");
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -48,6 +50,15 @@ namespace OpenBox.Store
                 await AppLibrary.UpdateFromStoreAsync(apps);
                 await AppLibrary.GetInstalledAsync();
                 AppList.ItemsSource = apps.Select(app => new StoreItem(app, AppLibrary.IsInstalled(app.Id))).ToList();
+                foreach (StoreItem item in AppList.ItemsSource as System.Collections.IEnumerable)
+                {
+                    // Still installing from an earlier visit.
+                    var installation = item.App.IsPackage ? PackageApps.GetInstallation(item.App) : null;
+                    if (installation != null && !item.IsInstalled)
+                    {
+                        item.Follow(installation);
+                    }
+                }
                 if (apps.Count == 0)
                 {
                     ShowStatus("There are no apps in the store yet.", false);
@@ -81,31 +92,28 @@ namespace OpenBox.Store
         private async void AppList_ItemClick(object sender, ItemClickEventArgs e)
         {
             var item = (StoreItem)e.ClickedItem;
-            if (_busy)
+            if (_busy || item.IsInstalling)
             {
                 return;
             }
             _busy = true;
             try
             {
-                if (!item.IsInstalled)
+                if (item.IsInstalled)
+                {
+                    if (await AppActions.UninstallAsync(item.App, true))
+                    {
+                        item.IsInstalled = false;
+                    }
+                }
+                else if (item.App.IsPackage)
+                {
+                    item.Follow(PackageApps.Install(item.App));
+                }
+                else
                 {
                     await AppLibrary.InstallAsync(item.App);
                     item.IsInstalled = true;
-                    return;
-                }
-                var dialog = new ContentDialog
-                {
-                    Title = "Remove " + item.App.Name + "?",
-                    Content = "It comes off your homescreen. You can add it again from here.",
-                    PrimaryButtonText = "Remove",
-                    CloseButtonText = "Cancel",
-                    DefaultButton = ContentDialogButton.Close,
-                };
-                if (await dialog.ShowAsync() == ContentDialogResult.Primary)
-                {
-                    await AppLibrary.UninstallAsync(item.App.Id);
-                    item.IsInstalled = false;
                 }
             }
             finally
@@ -124,6 +132,7 @@ namespace OpenBox.Store
     public sealed class StoreItem : INotifyPropertyChanged
     {
         private bool _isInstalled;
+        private Installation _installation;
 
         public StoreItem(AppEntry app, bool isInstalled)
         {
@@ -141,19 +150,57 @@ namespace OpenBox.Store
             set
             {
                 _isInstalled = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Status)));
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(StatusOpacity)));
+                Changed();
             }
+        }
+
+        public bool IsInstalling
+        {
+            get { return _installation != null && !_installation.Done && !_installation.Failed; }
         }
 
         public string Status
         {
-            get { return _isInstalled ? "✓ On your homescreen" : "Add"; }
+            get
+            {
+                if (_installation != null && !_isInstalled)
+                {
+                    return _installation.Status;
+                }
+                return _isInstalled ? "\u2713 On your homescreen" : App.IsPackage ? "Install" : "Add";
+            }
         }
 
         public double StatusOpacity
         {
             get { return _isInstalled ? 0.6 : 1.0; }
+        }
+
+        /// <summary>Shows a package app's installation as it goes.</summary>
+        internal void Follow(Installation installation)
+        {
+            if (_installation != null)
+            {
+                _installation.Changed -= OnInstallationChanged;
+            }
+            _installation = installation;
+            _installation.Changed += OnInstallationChanged;
+            OnInstallationChanged(installation, EventArgs.Empty);
+        }
+
+        private void OnInstallationChanged(object sender, EventArgs e)
+        {
+            if (_installation.Done)
+            {
+                _isInstalled = true;
+            }
+            Changed();
+        }
+
+        private void Changed()
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Status)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(StatusOpacity)));
         }
     }
 }

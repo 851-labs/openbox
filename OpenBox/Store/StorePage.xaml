@@ -36,9 +36,11 @@
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                             <TextBlock Text="{x:Bind App.Name}" FontSize="18" />
                             <TextBlock Text="{x:Bind App.Description}" FontSize="13" Opacity="0.6" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{x:Bind App.Credit}" FontSize="12" Opacity="0.5" TextTrimming="CharacterEllipsis"
+                                Visibility="{x:Bind App.HasCredit}" />
                         </StackPanel>
                         <TextBlock Grid.Column="2" Text="{x:Bind Status, Mode=OneWay}" Opacity="{x:Bind StatusOpacity, Mode=OneWay}"
-                            FontSize="15" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            FontSize="15" VerticalAlignment="Center" Margin="0,0,8,0" MaxWidth="360" TextWrapping="Wrap" TextAlignment="Right" />
                     </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>

@@ -5,7 +5,8 @@
   xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
-  IgnorableNamespaces="uap mp uap3">
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap mp uap3 rescap">
 
   <Identity
     Name="851Labs.openbox"
@@ -50,5 +51,8 @@
     <Capability Name="privateNetworkClientServer" />
     <!-- Keep playing music when the console's home screen is opened. -->
     <uap3:Capability Name="backgroundMediaPlayback"/>
+    <!-- Installing, finding, launching and uninstalling the store's package apps (Packages/). -->
+    <rescap:Capability Name="packageManagement"/>
+    <rescap:Capability Name="packageQuery"/>
   </Capabilities>
 </Package>

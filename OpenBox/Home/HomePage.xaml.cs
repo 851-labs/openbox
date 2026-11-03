@@ -173,9 +173,11 @@ namespace OpenBox.Home
         private async void Uninstall(AppEntry app)
         {
             var index = _apps.IndexOf(app);
-            _apps.Remove(app);
+            if (await AppActions.UninstallAsync(app, false))
+            {
+                _apps.Remove(app);
+            }
             FocusTile(Math.Min(index, _apps.Count - 1));
-            await AppLibrary.UninstallAsync(app.Id);
         }
 
         // Moving a tile. Until it's put down the grid itself doesn't change: each tile is only

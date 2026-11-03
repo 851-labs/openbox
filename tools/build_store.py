@@ -24,8 +24,15 @@ ID = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 COLOR = re.compile(r"^#[0-9A-Fa-f]{6}$")
 # Built into openbox; a store app can't take their place.
 RESERVED = {"youtube", "store", "airplay", "openbox"}
-REQUIRED = {"name", "description", "url", "icon", "color"}
-OPTIONAL = {"input", "userAgent"}
+# Every app has these, and either a web app's url or a package app's package.
+REQUIRED = {"name", "description", "icon", "color"}
+WEB_FIELDS = {"url", "input", "userAgent"}
+OPTIONAL = WEB_FIELDS | {"package", "credit"}
+PACKAGE_FIELDS = {"url", "sha256Url", "familyName", "appId"}
+HTTPS = re.compile(r"^https://[^\s/]+\.[^\s/]+(/\S*)?$")
+# Name_PublisherId, as Windows writes package family names.
+FAMILY_NAME = re.compile(r"^[A-Za-z0-9.-]{3,50}_[0-9a-hjkmnp-tv-z]{13}$")
+APP_ID = re.compile(r"^[A-Za-z][A-Za-z0-9.]{0,63}$")
 MAX_ICON_BYTES = 200 * 1024
 
 
@@ -59,13 +66,20 @@ def check_app(file_name):
         error("must be a JSON object")
         return None, None, errors
 
+    package = app.get("package")
     for key in sorted(REQUIRED - app.keys()):
         error(f'"{key}" is missing')
     for key in sorted(app.keys() - REQUIRED - OPTIONAL):
         error(f'unknown field "{key}"')
+    if package is None and "url" not in app:
+        error('"url" is missing (or "package", for an app package)')
+    if package is not None and app.keys() & WEB_FIELDS:
+        error('a package app has "package" instead of ' + ", ".join(f'"{k}"' for k in sorted(app.keys() & WEB_FIELDS)))
     for key, value in app.items():
-        if not isinstance(value, str) or not value.strip():
+        if key != "package" and (not isinstance(value, str) or not value.strip()):
             error(f'"{key}" must be a non-empty string')
+    if package is not None:
+        errors += check_package(package, error)
     if errors:
         return None, None, errors
 
@@ -73,8 +87,10 @@ def check_app(file_name):
         error('"name" is longer than 24 characters')
     if len(app["description"]) > 80:
         error('"description" is longer than 80 characters')
-    if not re.match(r"^https://[^\s/]+\.[^\s/]+(/\S*)?$", app["url"]):
+    if "url" in app and not HTTPS.match(app["url"]):
         error('"url" must be an https:// address')
+    if len(app.get("credit", "")) > 100:
+        error('"credit" is longer than 100 characters')
     if not COLOR.match(app["color"]):
         error('"color" must look like #1A2B3C')
     if app.get("input", "pointer") not in ("pointer", "remote"):
@@ -104,15 +120,44 @@ def check_app(file_name):
         "id": app_id,
         "name": app["name"],
         "description": app["description"],
-        "url": app["url"],
         # The hash changes the address when the icon does, so the console doesn't keep the old one.
         "icon": f"{BASE_URL}/icons/{app_id}.png?v={version}",
         "color": app["color"].upper(),
-        "input": app.get("input", "pointer"),
     }
-    if "userAgent" in app:
-        entry["userAgent"] = app["userAgent"]
+    if package is not None:
+        entry["package"] = {"appId": "App", **package}
+    else:
+        entry["url"] = app["url"]
+        entry["input"] = app.get("input", "pointer")
+    for key in ("userAgent", "credit"):
+        if key in app:
+            entry[key] = app[key]
     return entry, icon, []
+
+
+def check_package(package, error):
+    """A package app's "package": where its developer publishes it, and what it installs as."""
+    if not isinstance(package, dict):
+        error('"package" must be an object')
+        return []
+    for key in sorted({"url", "familyName"} - package.keys()):
+        error(f'"package.{key}" is missing')
+    for key in sorted(package.keys() - PACKAGE_FIELDS):
+        error(f'unknown field "package.{key}"')
+    for key, value in package.items():
+        if not isinstance(value, str) or not value.strip():
+            error(f'"package.{key}" must be a non-empty string')
+            return []
+    for key in ("url", "sha256Url"):
+        if key in package and not HTTPS.match(package[key]):
+            error(f'"package.{key}" must be an https:// address')
+    if "url" in package and not re.search(r"\.(appx|msix)$", package["url"], re.I):
+        error('"package.url" must be an .appx or .msix')
+    if "familyName" in package and not FAMILY_NAME.match(package["familyName"]):
+        error('"package.familyName" must be a package family name, e.g. Contoso.App_8wekyb3d8bbwe')
+    if "appId" in package and not APP_ID.match(package["appId"]):
+        error('"package.appId" must be an Application Id from the package\'s manifest')
+    return []
 
 
 def main():
