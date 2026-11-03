@@ -9,7 +9,7 @@ namespace OpenBox.Controls
 {
     /// <summary>
     /// What the controller's buttons do here, drawn the way the console does: A green, B red,
-    /// X blue, Y yellow, and View and the D-pad as dark buttons with their symbols.
+    /// X blue, Y yellow, and View, Menu and the D-pad as dark buttons with their symbols.
     /// </summary>
     public sealed class HintBar : StackPanel
     {
@@ -23,7 +23,7 @@ namespace OpenBox.Controls
             VerticalAlignment = VerticalAlignment.Bottom;
         }
 
-        /// <summary>Pairs of a button ("A", "B", "X", "Y", "View", "DPad") and what it does.</summary>
+        /// <summary>Pairs of a button ("A", "B", "X", "Y", "View", "Menu", "DPad") and what it does.</summary>
         public void Show(params string[] hints)
         {
             Children.Clear();
@@ -59,9 +59,19 @@ namespace OpenBox.Controls
             var white = new SolidColorBrush(Colors.White);
             if (name == "View")
             {
-                // Two overlapping windows.
-                button.Children.Add(new Rectangle { Width = 8, Height = 6, Stroke = white, StrokeThickness = 1.2, Margin = new Thickness(-3, -3, 0, 0) });
-                button.Children.Add(new Rectangle { Width = 8, Height = 6, Stroke = white, StrokeThickness = 1.2, Fill = new SolidColorBrush(dark), Margin = new Thickness(3, 3, 0, 0) });
+                // Two overlapping squares.
+                button.Children.Add(new Rectangle { Width = 7, Height = 7, Stroke = white, StrokeThickness = 1.2, RenderTransform = new TranslateTransform { X = -2, Y = -2 } });
+                button.Children.Add(new Rectangle { Width = 7, Height = 7, Stroke = white, StrokeThickness = 1.2, Fill = new SolidColorBrush(dark), RenderTransform = new TranslateTransform { X = 2, Y = 2 } });
+            }
+            else if (name == "Menu")
+            {
+                // Three lines.
+                var lines = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
+                for (var i = 0; i < 3; i++)
+                {
+                    lines.Children.Add(new Rectangle { Width = 10, Height = 1.5, Fill = white });
+                }
+                button.Children.Add(lines);
             }
             else if (name == "DPad")
             {

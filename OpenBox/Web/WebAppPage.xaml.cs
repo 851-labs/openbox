@@ -42,13 +42,11 @@ namespace OpenBox.Web
             PreviewKeyDown += OnPreviewKeyDown;
         }
 
-        /// <summary>
-        /// While the controller is in use the page reads B from it itself, so the system's back
-        /// request (which B also raises) is left alone: going back here too would go back twice.
-        /// </summary>
+        // The page reads B from the controller itself (it goes to the app), so the system's back
+        // request, which B also raises, has nothing left to do.
         bool IBackHandler.HandleBack()
         {
-            return _controller != null && !_controller.Paused;
+            return true;
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)

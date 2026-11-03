@@ -10,7 +10,7 @@ namespace OpenBox.Apps
     ///
     /// A native app is a XAML page: add it to <see cref="Core"/> with <see cref="AppEntry.Native"/>
     /// and opening its tile navigates to that page (the app's entry is the navigation parameter).
-    /// B goes back home and View always does; a page that needs B for itself implements IBackHandler.
+    /// View goes home from it; B belongs to the page, which gets it by implementing IBackHandler.
     /// AirPlay is the next one.
     /// </summary>
     internal static class BuiltInApps

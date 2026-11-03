@@ -55,8 +55,9 @@ namespace OpenBox
                 _frame.NavigationFailed += (s, args) => { throw new Exception("Failed to load page " + args.SourcePageType.FullName); };
                 Window.Current.Content = _frame;
                 SystemNavigationManager.GetForCurrentView().BackRequested += OnBackRequested;
-                // View goes home from anywhere. (In web apps, which have the focus inside the web
-                // view, WebAppPage reads it from the controller.)
+                // View goes home from anywhere: it's the one way back to the homescreen. (In web
+                // apps, which have the focus inside the web view, WebAppPage reads it from the
+                // controller.)
                 _frame.PreviewKeyDown += (s, args) =>
                 {
                     if (args.Key == VirtualKey.GamepadView)
@@ -107,16 +108,13 @@ namespace OpenBox
             }
         }
 
-        // B, on the console: back, which from the Store is the homescreen.
+        // B, on the console. It belongs to whatever is open (View goes home): openbox itself
+        // never uses it to leave a page.
         private void OnBackRequested(object sender, BackRequestedEventArgs e)
         {
-            // Handled either way: unhandled, B would close openbox. On the homescreen it does nothing.
+            // Handled either way: unhandled, B would close openbox.
             e.Handled = true;
-            var page = _frame.Content as IBackHandler;
-            if (page == null || !page.HandleBack())
-            {
-                GoHome();
-            }
+            (_frame.Content as IBackHandler)?.HandleBack();
         }
 
         private void OnUnhandledException(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
