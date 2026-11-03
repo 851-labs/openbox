@@ -3,8 +3,9 @@
     python3 tools/build_store.py           # check only
     python3 tools/build_store.py _site     # check, then write _site/index.json and _site/icons/
 
-CI runs it on every pull request, and on main publishes the result to GitHub Pages
-(https://851-labs.github.io/openbox/index.json). See apps/README.md for the format.
+CI runs it on every pull request, and on main publishes the result on the repository's store
+branch (https://raw.githubusercontent.com/851-labs/openbox/store/index.json). See apps/README.md
+for the format.
 """
 import hashlib
 import json
@@ -17,7 +18,7 @@ from datetime import datetime, timezone
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 APPS = os.path.join(ROOT, "apps")
-BASE_URL = os.environ.get("STORE_BASE_URL", "https://851-labs.github.io/openbox")
+BASE_URL = os.environ.get("STORE_BASE_URL", "https://raw.githubusercontent.com/851-labs/openbox/store")
 
 ID = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 COLOR = re.compile(r"^#[0-9A-Fa-f]{6}$")

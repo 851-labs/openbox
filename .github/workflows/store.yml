@@ -11,30 +11,22 @@ jobs:
   build:
     name: Check apps and build the index
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # publish the index on main
     steps:
       - uses: actions/checkout@v6
+
       - name: Build
         run: python3 tools/build_store.py _site
-      - uses: actions/upload-pages-artifact@v4
-        if: github.event_name != 'pull_request'
-        with:
-          path: _site
 
-  deploy:
-    # The app reads https://851-labs.github.io/openbox/index.json.
-    name: Publish
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    concurrency:
-      group: pages
-      cancel-in-progress: false
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Publish
+        # The app reads https://raw.githubusercontent.com/851-labs/openbox/store/index.json: the
+        # store branch holds only the latest build of the index and its icons.
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        working-directory: _site
+        run: |
+          git init -q -b store
+          git add -A
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -qm "Store index for ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" store

@@ -11,11 +11,11 @@ namespace OpenBox.Store
 {
     /// <summary>
     /// The store's app list. CI builds it from the apps/ folder of the repository
-    /// (tools/build_store.py) and publishes it on the repository's GitHub Pages site.
+    /// (tools/build_store.py) and publishes it, with the apps' icons, on the repository's store branch.
     /// </summary>
     internal static class StoreIndex
     {
-        public const string IndexUrl = "https://851-labs.github.io/openbox/index.json";
+        public const string IndexUrl = "https://raw.githubusercontent.com/851-labs/openbox/store/index.json";
 
         /// <summary>The store's apps, or an exception saying why they couldn't be loaded.</summary>
         public static async Task<List<AppEntry>> LoadAsync()
