@@ -23,6 +23,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <StackPanel Orientation="Horizontal" Spacing="10">
@@ -31,7 +32,7 @@
         </StackPanel>
         <TextBlock x:Name="Clock" FontSize="20" Opacity="0.8" HorizontalAlignment="Right" VerticalAlignment="Center" />
 
-        <GridView x:Name="Tiles" Grid.Row="1" Margin="0,32,0,0" Padding="0,0,0,27"
+        <GridView x:Name="Tiles" Grid.Row="1" Margin="0,32,0,0"
             SelectionMode="None" IsItemClickEnabled="True" ItemClick="Tiles_ItemClick"
             ItemContainerStyle="{StaticResource TileContainerStyle}">
             <GridView.ItemTemplate>
@@ -45,5 +46,8 @@
                 </DataTemplate>
             </GridView.ItemTemplate>
         </GridView>
+
+        <!-- What the buttons do; while a tile is being moved, how to move it. -->
+        <TextBlock x:Name="Hint" Grid.Row="2" Text="X  Options" FontSize="14" Opacity="0.5" Margin="0,0,0,27" />
     </Grid>
 </Page>

@@ -53,6 +53,8 @@
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AdBlock\AdBlocker.cs" />
+    <Compile Include="AdBlock\AdFilters.cs" />
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
@@ -60,6 +62,7 @@
     <Compile Include="Apps\AppLibrary.cs" />
     <Compile Include="Apps\BuiltInApps.cs" />
     <Compile Include="Diagnostics\Log.cs" />
+    <Compile Include="IBackHandler.cs" />
     <Compile Include="Home\HomePage.xaml.cs">
       <DependentUpon>HomePage.xaml</DependentUpon>
     </Compile>
@@ -88,6 +91,9 @@
     <Content Include="Properties\Default.rd.xml" />
     <!-- The scripts added to web apps' pages, and YouTube's built-in ad filters. -->
     <Content Include="Web\Inject\*.js" />
+    <!-- The ad blocker. adblock.json is built by tools/build_adblock.py (CI runs it before building). -->
+    <Content Include="AdBlock\Inject\*.js" />
+    <Content Include="AdBlock\*.json" />
     <Content Include="YouTube\Inject\*.js" />
     <Content Include="YouTube\Inject\filters.json" />
   </ItemGroup>

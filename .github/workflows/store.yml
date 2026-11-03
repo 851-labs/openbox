@@ -2,10 +2,13 @@ name: Store
 
 on:
   push:
-    paths: ['apps/**', 'tools/build_store.py', '.github/workflows/store.yml']
+    paths: ['apps/**', 'tools/build_store.py', 'tools/build_adblock.py', '.github/workflows/store.yml']
   pull_request:
-    paths: ['apps/**', 'tools/build_store.py', '.github/workflows/store.yml']
+    paths: ['apps/**', 'tools/build_store.py', 'tools/build_adblock.py', '.github/workflows/store.yml']
   workflow_dispatch:
+  schedule:
+    # Fresh ad filters every day.
+    - cron: '17 6 * * *'
 
 jobs:
   build:
@@ -17,11 +20,13 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Build
-        run: python3 tools/build_store.py _site
+        run: |
+          python3 tools/build_store.py _site
+          python3 tools/build_adblock.py _site/adblock.json
 
       - name: Publish
-        # The app reads https://raw.githubusercontent.com/851-labs/openbox/store/index.json: the
-        # store branch holds only the latest build of the index and its icons.
+        # The app reads https://raw.githubusercontent.com/851-labs/openbox/store/index.json and
+        # adblock.json: the store branch holds only the latest build of them and the icons.
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         working-directory: _site
         run: |

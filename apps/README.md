@@ -22,9 +22,11 @@ Each app in openbox's Store is a JSON file in this folder, with its icon in `ico
 - `color`: the tile's background.
 - `input` (optional): how the controller drives the page.
   - `"pointer"` (the default): the console's mouse pointer, as in a browser.
-  - `"remote"`: for web apps made for TVs. The D-pad, A and B become arrow keys, Enter and Escape.
+  - `"remote"`: for web apps made for TVs. The D-pad, A and B become arrow keys, Enter and Escape. Twitch uses it: `olivine.tv.twitch.tv` is the TV app Twitch made for Xbox.
 - `userAgent` (optional): for TV web apps that only serve their TV version to TVs.
 
 In every app, B goes back to the homescreen (or, with `"remote"`, back within the app, which goes home when the app closes itself), and View always goes home.
+
+Every app gets openbox's ad blocker; there's nothing to set.
 
 To check your files before opening the pull request, run `python3 tools/build_store.py`.

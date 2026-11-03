@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Web.WebView2.Core;
+using OpenBox.AdBlock;
 using OpenBox.Apps;
 using OpenBox.Diagnostics;
 using Windows.Data.Json;
@@ -22,12 +23,13 @@ namespace OpenBox.Web
     /// or as the console's mouse pointer, as in a browser. Either way B goes back home (a TV app
     /// gets B as its own back key, and goes home when it closes itself) and View always does.
     /// </summary>
-    public sealed partial class WebAppPage : Page
+    public sealed partial class WebAppPage : Page, IBackHandler
     {
         private static readonly bool IsXbox = AnalyticsInfo.VersionInfo.DeviceFamily == "Windows.Xbox";
 
         private AppEntry _app;
         private IWebAppExtension _extension;
+        private AdBlocker _adBlocker;
         private CoreWebView2 _core;
         private ControllerBridge _controller;
         private bool _loaded;
@@ -40,12 +42,12 @@ namespace OpenBox.Web
         }
 
         /// <summary>
-        /// While true the page reads B from the controller itself, so the system's back request
-        /// (which B also raises) should be left alone.
+        /// While the controller is in use the page reads B from it itself, so the system's back
+        /// request (which B also raises) is left alone: going back here too would go back twice.
         /// </summary>
-        internal bool HandlesBack
+        bool IBackHandler.HandleBack()
         {
-            get { return _controller != null && !_controller.Paused; }
+            return _controller != null && !_controller.Paused;
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -67,6 +69,7 @@ namespace OpenBox.Web
             _closed = true;
             _controller?.Dispose();
             _extension?.Dispose();
+            _adBlocker?.Dispose();
             if (_core != null)
             {
                 _core.WebMessageReceived -= OnWebMessageReceived;
@@ -117,6 +120,19 @@ namespace OpenBox.Web
                 if (_extension != null)
                 {
                     await _extension.AttachAsync(_core);
+                }
+                else
+                {
+                    // Every other web app gets the uBlock Origin style blocker; YouTube's own
+                    // (TubeBox's) is tuned to its TV app. Without it the app still opens.
+                    try
+                    {
+                        _adBlocker = await AdBlocker.AttachAsync(_core, _app.Url);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error("The ad blocker failed to start", ex);
+                    }
                 }
                 var userAgent = _extension?.UserAgent ?? _app.UserAgent;
                 if (!string.IsNullOrEmpty(userAgent))

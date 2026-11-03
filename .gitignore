@@ -16,8 +16,9 @@ OpenBox/Generated Files/
 packages/
 project.lock.json
 
-# Store index build output
+# Build output: the store index, and the ad filters (tools/build_adblock.py)
 _site/
+OpenBox/AdBlock/adblock.json
 
 # Python
 __pycache__/

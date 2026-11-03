@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using OpenBox.AdBlock;
 using OpenBox.Apps;
 using OpenBox.Diagnostics;
 using OpenBox.Home;
@@ -69,6 +70,8 @@ namespace OpenBox
                     }
                 }
                 Window.Current.Activate();
+                // The ad filters take a moment to load: have them ready by the time an app opens.
+                AdFilters.Preload();
             }
         }
 
@@ -96,13 +99,11 @@ namespace OpenBox
         {
             // Handled either way: unhandled, B would close openbox. On the homescreen it does nothing.
             e.Handled = true;
-            var webApp = _frame.Content as WebAppPage;
-            if (webApp != null && webApp.HandlesBack)
+            var page = _frame.Content as IBackHandler;
+            if (page == null || !page.HandleBack())
             {
-                // It reads B from the controller itself; going back here too would go back twice.
-                return;
+                GoHome();
             }
-            GoHome();
         }
 
         private void OnUnhandledException(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)

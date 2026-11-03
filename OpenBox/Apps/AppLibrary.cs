@@ -16,6 +16,7 @@ namespace OpenBox.Apps
     internal static class AppLibrary
     {
         private const string FileName = "apps.json";
+        private const string OrderKey = "homeOrder";
         private static List<AppEntry> _installed;
 
         public static async Task<IReadOnlyList<AppEntry>> GetInstalledAsync()
@@ -27,13 +28,37 @@ namespace OpenBox.Apps
             return _installed;
         }
 
-        /// <summary>Everything on the homescreen, in order.</summary>
+        /// <summary>
+        /// Everything on the homescreen, in order: the order the tiles were moved into, or built-in
+        /// apps, then store apps, then the Store. Apps added since a tile was moved go before the Store.
+        /// </summary>
         public static async Task<List<AppEntry>> GetHomeAppsAsync()
         {
             var apps = new List<AppEntry>(BuiltInApps.Core);
             apps.AddRange(await GetInstalledAsync());
             apps.Add(BuiltInApps.Store);
-            return apps;
+
+            object saved;
+            if (!ApplicationData.Current.LocalSettings.Values.TryGetValue(OrderKey, out saved) || !(saved is string))
+            {
+                return apps;
+            }
+            var order = ((string)saved).Split('|').ToList();
+            foreach (var app in apps)
+            {
+                if (!order.Contains(app.Id))
+                {
+                    var store = order.IndexOf(BuiltInApps.Store.Id);
+                    order.Insert(store >= 0 ? store : order.Count, app.Id);
+                }
+            }
+            return apps.OrderBy(app => order.IndexOf(app.Id)).ToList();
+        }
+
+        /// <summary>Keeps the homescreen in this order, after a tile is moved.</summary>
+        public static void SaveOrder(IEnumerable<AppEntry> apps)
+        {
+            ApplicationData.Current.LocalSettings.Values[OrderKey] = string.Join("|", apps.Select(app => app.Id));
         }
 
         public static bool IsInstalled(string id)
