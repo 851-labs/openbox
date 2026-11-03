@@ -9,21 +9,30 @@ using Windows.UI.Xaml.Navigation;
 
 namespace OpenBox.Store
 {
-    /// <summary>The store's apps. A adds one to the homescreen, or offers to remove it if it's there.</summary>
-    public sealed partial class StorePage : Page
+    /// <summary>
+    /// The store's apps. A adds one to the homescreen, or offers to remove it if it's there. The
+    /// Store is part of openbox, not an app, so B is plain back navigation: it goes home.
+    /// </summary>
+    public sealed partial class StorePage : Page, IBackHandler
     {
         private bool _busy;
 
         public StorePage()
         {
             this.InitializeComponent();
-            Hints.Show("A", "Add or remove", "View", "Home");
+            Hints.Show("A", "Add or remove", "B", "Back");
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
             LoadAsync();
+        }
+
+        bool IBackHandler.HandleBack()
+        {
+            App.GoHome();
+            return true;
         }
 
         private async void LoadAsync()

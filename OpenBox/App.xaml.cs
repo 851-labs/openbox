@@ -51,7 +51,8 @@ namespace OpenBox
 
             if (_frame == null)
             {
-                _frame = new Frame();
+                // The shell's background, not black, shows between pages.
+                _frame = new Frame { Background = new SolidColorBrush(Color.FromArgb(255, 17, 17, 20)) };
                 _frame.NavigationFailed += (s, args) => { throw new Exception("Failed to load page " + args.SourcePageType.FullName); };
                 Window.Current.Content = _frame;
                 SystemNavigationManager.GetForCurrentView().BackRequested += OnBackRequested;
@@ -108,8 +109,8 @@ namespace OpenBox
             }
         }
 
-        // B, on the console. It belongs to whatever is open (View goes home): openbox itself
-        // never uses it to leave a page.
+        // B, on the console. It belongs to whatever is open: in openbox's own screens (the
+        // Store, menus) it's back navigation; in an app it's the app's, and View goes home.
         private void OnBackRequested(object sender, BackRequestedEventArgs e)
         {
             // Handled either way: unhandled, B would close openbox.
