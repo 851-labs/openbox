@@ -6,6 +6,7 @@ using Windows.System;
 using Windows.UI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
@@ -13,13 +14,12 @@ using Windows.UI.Xaml.Navigation;
 namespace OpenBox.Home
 {
     /// <summary>
-    /// The homescreen: a tile for each app. A opens it; B in an app comes back here. X opens a
+    /// The homescreen: a tile for each app. A opens it; View in an app comes back here. X opens a
     /// tile's options: Move, which picks the tile up so the D-pad moves it around (A puts it
     /// down, B puts it back), and Uninstall for store apps.
     /// </summary>
     public sealed partial class HomePage : Page, IBackHandler
     {
-        private const string IdleHint = "X  Options";
         private static readonly Brush MovingFocusBrush = new SolidColorBrush(Color.FromArgb(255, 61, 139, 255));
 
         private readonly DispatcherTimer _clock = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
@@ -34,6 +34,7 @@ namespace OpenBox.Home
         {
             this.InitializeComponent();
             _clock.Tick += (s, e) => UpdateClock();
+            Hints.Show("A", "Open", "X", "Options");
             PreviewKeyDown += OnPreviewKeyDown;
             PreviewKeyUp += OnPreviewKeyUp;
         }
@@ -158,7 +159,7 @@ namespace OpenBox.Home
             var menu = new MenuFlyout();
             menu.Items.Add(move);
             menu.Items.Add(uninstall);
-            menu.ShowAt(container);
+            menu.ShowAt(container, new FlyoutShowOptions { Placement = FlyoutPlacementMode.BottomEdgeAlignedLeft });
         }
 
         private async void Uninstall(AppEntry app)
@@ -173,8 +174,7 @@ namespace OpenBox.Home
         {
             _moving = app;
             _moveStartIndex = _apps.IndexOf(app);
-            Hint.Text = "Moving " + app.Name + "   D-pad  Move   A  Done   B  Cancel";
-            Hint.Opacity = 0.9;
+            Hints.Show("DPad", "Move " + app.Name, "A", "Done", "B", "Cancel");
             FocusTile(_moveStartIndex);
         }
 
@@ -187,11 +187,25 @@ namespace OpenBox.Home
                 // Down from a row with nothing under the tile goes to the end; otherwise stay.
                 to = delta > 1 && from < _apps.Count - 1 ? _apps.Count - 1 : from;
             }
-            if (to != from)
-            {
-                _apps.Move(from, to);
-            }
+            Shift(from, to);
             FocusTile(to);
+        }
+
+        /// <summary>
+        /// Puts the lifted tile at <paramref name="to"/> by moving the tiles between, one place
+        /// each: the lifted tile itself is never taken out of the grid, so it keeps its focus and
+        /// nothing else on the screen redraws.
+        /// </summary>
+        private void Shift(int from, int to)
+        {
+            for (; from < to; from++)
+            {
+                _apps.Move(from + 1, from);
+            }
+            for (; from > to; from--)
+            {
+                _apps.Move(from - 1, from);
+            }
         }
 
         private void EndMove(bool keep)
@@ -201,15 +215,14 @@ namespace OpenBox.Home
             var index = _apps.IndexOf(app);
             if (!keep && index != _moveStartIndex)
             {
-                _apps.Move(index, _moveStartIndex);
+                Shift(index, _moveStartIndex);
                 index = _moveStartIndex;
             }
             if (keep)
             {
                 AppLibrary.SaveOrder(_apps);
             }
-            Hint.Text = IdleHint;
-            Hint.Opacity = 0.5;
+            Hints.Show("A", "Open", "X", "Options");
             FocusTile(index);
         }
 

@@ -17,6 +17,7 @@ namespace OpenBox.Store
         public StorePage()
         {
             this.InitializeComponent();
+            Hints.Show("A", "Add or remove", "B", "Back");
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)

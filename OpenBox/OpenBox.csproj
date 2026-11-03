@@ -61,6 +61,7 @@
     <Compile Include="Apps\AppEntry.cs" />
     <Compile Include="Apps\AppLibrary.cs" />
     <Compile Include="Apps\BuiltInApps.cs" />
+    <Compile Include="Controls\HintBar.cs" />
     <Compile Include="Diagnostics\Log.cs" />
     <Compile Include="IBackHandler.cs" />
     <Compile Include="Home\HomePage.xaml.cs">

@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:apps="using:OpenBox.Apps"
+    xmlns:ob="using:OpenBox.Controls"
     NavigationCacheMode="Required"
     Background="{StaticResource ShellBackgroundBrush}">
 
@@ -35,6 +36,10 @@
         <GridView x:Name="Tiles" Grid.Row="1" Margin="0,32,0,0"
             SelectionMode="None" IsItemClickEnabled="True" ItemClick="Tiles_ItemClick"
             ItemContainerStyle="{StaticResource TileContainerStyle}">
+            <!-- No animations: moving a tile should move that tile, not set the whole grid moving. -->
+            <GridView.ItemContainerTransitions>
+                <TransitionCollection />
+            </GridView.ItemContainerTransitions>
             <GridView.ItemTemplate>
                 <DataTemplate x:DataType="apps:AppEntry">
                     <StackPanel Width="198" Spacing="8">
@@ -48,6 +53,6 @@
         </GridView>
 
         <!-- What the buttons do; while a tile is being moved, how to move it. -->
-        <TextBlock x:Name="Hint" Grid.Row="2" Text="X  Options" FontSize="14" Opacity="0.5" Margin="0,0,0,27" />
+        <ob:HintBar x:Name="Hints" Grid.Row="2" Margin="0,0,0,27" />
     </Grid>
 </Page>

@@ -4,8 +4,8 @@ A simple launcher for Xbox consoles in Developer Mode. It boots to a homescreen 
 
 ## Using it
 - **Homescreen:** move between tiles with the D-pad or left stick, press **A** to open one. Press **X** on a tile for its options: **Move** picks it up so the D-pad moves it (A to put it down, B to put it back), and **Uninstall** removes a store app.
-- **In an app:** **B** goes back home. In YouTube, B goes back within YouTube, and backing out of YouTube's start screen goes home. **View** always goes home.
-- **Store:** the last tile. Press **A** on an app to add it to the homescreen, or on an added app to remove it.
+- **In an app:** **View** goes home. **B** goes back within the app: back a page, or in TV apps like YouTube and Twitch their own back, and backing out of YouTube's start screen goes home.
+- **Store:** the last tile. Press **A** on an app to add it to the homescreen, or on an added app to remove it. **B** goes back.
 
 ## Apps
 - **YouTube** is YouTube's own TV app (youtube.com/tv), with its ads removed. That part comes from [TubeBox](https://github.com/sharktie/tubebox-uwp).

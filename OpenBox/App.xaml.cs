@@ -8,6 +8,7 @@ using OpenBox.Store;
 using OpenBox.Web;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
+using Windows.System;
 using Windows.UI;
 using Windows.UI.Core;
 using Windows.UI.ViewManagement;
@@ -54,6 +55,16 @@ namespace OpenBox
                 _frame.NavigationFailed += (s, args) => { throw new Exception("Failed to load page " + args.SourcePageType.FullName); };
                 Window.Current.Content = _frame;
                 SystemNavigationManager.GetForCurrentView().BackRequested += OnBackRequested;
+                // View goes home from anywhere. (In web apps, which have the focus inside the web
+                // view, WebAppPage reads it from the controller.)
+                _frame.PreviewKeyDown += (s, args) =>
+                {
+                    if (args.Key == VirtualKey.GamepadView)
+                    {
+                        args.Handled = true;
+                        GoHome();
+                    }
+                };
             }
 
             if (e.PrelaunchActivated == false)
@@ -96,7 +107,7 @@ namespace OpenBox
             }
         }
 
-        // B, on the console.
+        // B, on the console: back, which from the Store is the homescreen.
         private void OnBackRequested(object sender, BackRequestedEventArgs e)
         {
             // Handled either way: unhandled, B would close openbox. On the homescreen it does nothing.

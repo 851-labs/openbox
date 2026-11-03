@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:Microsoft.UI.Xaml.Controls"
+    xmlns:ob="using:OpenBox.Controls"
     Background="Black">
 
     <Grid Background="Black">
@@ -14,6 +15,11 @@
             <controls:ProgressRing x:Name="SplashRing" IsActive="True" Width="28" Height="28" Margin="0,0,0,72"
                 VerticalAlignment="Bottom" Foreground="White" />
         </Grid>
+
+        <Border x:Name="HintsPanel" Visibility="Collapsed" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+            Margin="0,0,48,27" Padding="16,8" CornerRadius="19" Background="#E6111114" IsHitTestVisible="False">
+            <ob:HintBar x:Name="Hints" />
+        </Border>
 
         <Grid x:Name="LoadErrorPanel" Background="#FF111114" Visibility="Collapsed">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="560" Padding="24" Spacing="16">

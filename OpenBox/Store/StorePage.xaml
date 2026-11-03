@@ -4,21 +4,23 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:OpenBox.Store"
     xmlns:controls="using:Microsoft.UI.Xaml.Controls"
+    xmlns:ob="using:OpenBox.Controls"
     Background="{StaticResource ShellBackgroundBrush}">
 
     <Grid Padding="48,32,48,0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <StackPanel Spacing="4">
             <TextBlock Text="Store" FontSize="28" FontWeight="SemiBold" />
-            <TextBlock Text="Press A to add an app to your homescreen. New apps are added by pull request at github.com/851-labs/openbox."
+            <TextBlock Text="Add apps to your homescreen. New apps are added by pull request at github.com/851-labs/openbox."
                 FontSize="14" Opacity="0.6" TextWrapping="Wrap" />
         </StackPanel>
 
-        <ListView x:Name="AppList" Grid.Row="1" Margin="-12,20,-12,0" Padding="0,0,0,27"
+        <ListView x:Name="AppList" Grid.Row="1" Margin="-12,20,-12,0"
             SelectionMode="None" IsItemClickEnabled="True" ItemClick="AppList_ItemClick">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="local:StoreItem">
@@ -48,5 +50,7 @@
             <Button x:Name="RetryButton" Content="Retry" MinWidth="160" HorizontalAlignment="Center"
                 Visibility="Collapsed" Click="RetryButton_Click" />
         </StackPanel>
+
+        <ob:HintBar x:Name="Hints" Grid.Row="2" Margin="0,16,0,27" />
     </Grid>
 </Page>

@@ -25,7 +25,7 @@ Each app in openbox's Store is a JSON file in this folder, with its icon in `ico
   - `"remote"`: for web apps made for TVs. The D-pad, A and B become arrow keys, Enter and Escape. Twitch uses it: `olivine.tv.twitch.tv` is the TV app Twitch made for Xbox.
 - `userAgent` (optional): for TV web apps that only serve their TV version to TVs.
 
-In every app, B goes back to the homescreen (or, with `"remote"`, back within the app, which goes home when the app closes itself), and View always goes home.
+In every app, View goes back to the homescreen. B goes back a page (with `"remote"`, it's the app's own back key, and the app going home when it closes itself).
 
 Every app gets openbox's ad blocker; there's nothing to set.
 

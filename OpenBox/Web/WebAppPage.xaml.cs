@@ -20,8 +20,9 @@ namespace OpenBox.Web
     /// <summary>
     /// A web app, full screen in a WebView2. The controller drives it one of two ways
     /// (<see cref="AppEntry.RemoteInput"/>): as a TV remote, for web apps made for TVs (YouTube),
-    /// or as the console's mouse pointer, as in a browser. Either way B goes back home (a TV app
-    /// gets B as its own back key, and goes home when it closes itself) and View always does.
+    /// or as the console's mouse pointer, as in a browser. B goes back within the app (a TV app
+    /// gets it as its own back key, and goes home when it closes itself; a web page goes back a
+    /// page) and View goes home.
     /// </summary>
     public sealed partial class WebAppPage : Page, IBackHandler
     {
@@ -195,9 +196,9 @@ namespace OpenBox.Web
             else if (!_app.RemoteInput)
             {
                 // The pointer does the rest.
-                if (action == "back")
+                if (action == "back" && _core != null && _core.CanGoBack)
                 {
-                    App.GoHome();
+                    _core.GoBack();
                 }
             }
             else
@@ -293,6 +294,7 @@ namespace OpenBox.Web
                     Log.Write(_app.Id + " loaded");
                     Splash.Visibility = Visibility.Collapsed;
                     SplashRing.IsActive = false;
+                    ShowHints();
                 }
                 EmulatePageFocus(sender);
             }
@@ -301,6 +303,20 @@ namespace OpenBox.Web
                 Log.Write(_app.Id + " failed to load: " + e.WebErrorStatus);
                 ShowLoadError("Check the console's internet connection and try again. (" + e.WebErrorStatus + ")");
             }
+        }
+
+        // How to get back out, for a few seconds once the app has loaded.
+        private void ShowHints()
+        {
+            Hints.Show("B", "Back", "View", "Home");
+            HintsPanel.Visibility = Visibility.Visible;
+            var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
+            timer.Tick += (s, e) =>
+            {
+                timer.Stop();
+                HintsPanel.Visibility = Visibility.Collapsed;
+            };
+            timer.Start();
         }
 
         // With no mouse pointer nothing ever clicks into a TV app, so the browser treats the page as
