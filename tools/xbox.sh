@@ -6,7 +6,10 @@
 #   install <dir>      install the .msix in <dir> with the .appx files in <dir>/Dependencies
 #                      (the openbox-x64 artifact, unzipped)
 #   launch             open openbox
+#   stop               close openbox
 #   screenshot <file>  save what's on the TV as a PNG
+#   log                print openbox's log
+#   command "<line>"   run a dev command in a Debug build (Diagnostics/DevCommands.cs)
 set -euo pipefail
 
 : "${XBOX_HOST:?set XBOX_HOST, e.g. https://192.168.1.20:11443}" "${XBOX_USER:?}" "${XBOX_PASS:?}"
@@ -71,11 +74,29 @@ launch)
         "$XBOX_HOST/api/taskmanager/app?appid=$(b64 "$family!App")&package=$(b64 "$full_name")"
     echo "Opened $full_name"
     ;;
+stop)
+    full_name=$(package_full_name)
+    token=$(csrf)
+    portal -X DELETE -H "X-CSRF-Token: $token" "$XBOX_HOST/api/taskmanager/app?package=$(b64 "$full_name")" >/dev/null
+    echo "Closed $full_name"
+    ;;
+log)
+    portal "$XBOX_HOST/api/filesystem/apps/file?knownfolderid=LocalAppData&packagefullname=$(package_full_name)&path=%5CLocalState&filename=openbox.log"
+    ;;
+command)
+    tmp=$(mktemp -d)
+    printf '%s' "${2:?usage: command \"<line>\"}" > "$tmp/dev-command.txt"
+    token=$(csrf)
+    portal -H "X-CSRF-Token: $token" -F "file=@$tmp/dev-command.txt" \
+        "$XBOX_HOST/api/filesystem/apps/file?knownfolderid=LocalAppData&packagefullname=$(package_full_name)&path=%5CLocalState" >/dev/null
+    rm -rf "$tmp"
+    echo "Sent: $2"
+    ;;
 screenshot)
     portal -o "${2:?usage: screenshot <file>}" "$XBOX_HOST/ext/screenshot?hdr=false"
     ;;
 *)
-    sed -n '2,10p' "$0"
+    sed -n '2,13p' "$0"
     exit 1
     ;;
 esac

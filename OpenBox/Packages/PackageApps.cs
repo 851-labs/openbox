@@ -10,6 +10,7 @@ using Windows.ApplicationModel;
 using Windows.Management.Deployment;
 using Windows.Networking.BackgroundTransfer;
 using Windows.Storage;
+using Windows.System;
 using Windows.Web.Http;
 
 namespace OpenBox.Packages
@@ -50,20 +51,46 @@ namespace OpenBox.Packages
             return Find(app) != null;
         }
 
-        /// <summary>False if the package isn't installed, or wouldn't launch.</summary>
-        public static async Task<bool> LaunchAsync(AppEntry app)
+        /// <summary>Opens the app's package. Null if it opened, otherwise why not.</summary>
+        public static async Task<string> LaunchAsync(AppEntry app)
         {
             var package = Find(app);
             if (package == null)
             {
                 Log.Write(app.Id + " isn't installed");
-                return false;
+                return "It isn't installed on this console any more. Uninstall it from the homescreen and install it again from the Store.";
             }
             var entries = await package.GetAppListEntriesAsync();
+            Log.Write(package.Id.FullName + " has " + entries.Count + " app(s): " + string.Join(", ", entries.Select(e => e.AppUserModelId)));
             var entry = entries.FirstOrDefault(e => e.AppUserModelId.EndsWith("!" + app.Package.AppId, StringComparison.Ordinal)) ?? entries.FirstOrDefault();
-            var launched = entry != null && await entry.LaunchAsync();
-            Log.Write((launched ? "Launched " : "Couldn't launch ") + package.Id.FullName);
-            return launched;
+            if (entry == null)
+            {
+                return "Its package has no app to open.";
+            }
+            if (await entry.LaunchAsync())
+            {
+                Log.Write("Launched " + entry.AppUserModelId);
+                return null;
+            }
+            // The console has users of its own; the launch may need to say whose it is.
+            foreach (var user in await User.FindAllAsync())
+            {
+                try
+                {
+                    if (await entry.LaunchForUserAsync(user))
+                    {
+                        Log.Write("Launched " + entry.AppUserModelId + " for a " + user.Type + " user");
+                        return null;
+                    }
+                    Log.Write("Launch for a " + user.Type + " user refused");
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("Launch for a " + user.Type + " user failed", ex);
+                }
+            }
+            Log.Write("Couldn't launch " + entry.AppUserModelId);
+            return "The console wouldn't open it.";
         }
 
         /// <summary>Removes the app's package from the console, with its data.</summary>

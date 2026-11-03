@@ -103,12 +103,13 @@ namespace OpenBox
                 return;
             }
             // An app of its own: the console switches to it, and openbox stays where it is.
-            if (!await PackageApps.LaunchAsync(app))
+            var problem = await PackageApps.LaunchAsync(app);
+            if (problem != null)
             {
                 await new ContentDialog
                 {
                     Title = "Couldn't open " + app.Name,
-                    Content = "It isn't installed on this console any more. Uninstall it from the homescreen and install it again from the Store.",
+                    Content = problem,
                     CloseButtonText = "OK",
                 }.ShowAsync();
             }
