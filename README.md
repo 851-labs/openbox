@@ -9,7 +9,8 @@ A simple launcher for Xbox consoles in Developer Mode. It boots to a homescreen 
 
 ## Apps
 - **YouTube** is YouTube's own TV app (youtube.com/tv), with its ads removed. That part comes from [TubeBox](https://github.com/sharktie/tubebox-uwp).
-- **Store apps** are web apps that open full screen. Each one is a JSON file in [`apps/`](apps/); see [apps/README.md](apps/README.md) to add one. Twitch opens Twitch's own TV app.
+- **Minecraft: Java Edition** installs from the Store, through [Bandit Launcher](https://launcher.banditvault.co.uk/) by veroxsity / BanditVault. openbox downloads it from their official release. Bandit targets Xbox Series X|S.
+- **Store apps** are web apps that open full screen, or app packages that openbox installs on the console. Each one is a JSON file in [`apps/`](apps/); see [apps/README.md](apps/README.md) to add one. Twitch opens Twitch's own TV app.
 - **Ad blocking** in every web app, the way uBlock Origin does it, with its default lists (uBlock filters, EasyList, EasyPrivacy, Peter Lowe's list): requests to ad and tracking servers are blocked, and leftover ad slots on the page are hidden. The lists update by themselves daily.
 
 ## Install on Xbox
@@ -28,6 +29,7 @@ A C# UWP app with XAML (`OpenBox/`):
 - `AdBlock/`: the ad blocker for web apps. `tools/build_adblock.py` compiles the filter lists into what it reads.
 - `YouTube/`: what YouTube adds to `WebAppPage`: a TV user agent and TubeBox's YouTube ad blocking, in place of the general one.
 - `Store/`: the Store page, reading the index CI builds from `apps/`.
+- `Packages/`: installing package apps on the console with PackageManager, and launching them.
 - `Apps/BuiltInApps.cs`: the built-in apps. A built-in native app (AirPlay, next) is a XAML page registered there.
 
 CI (`.github/workflows/`) builds a signed `.msix` on a Windows runner (`app.yml`). It also checks `apps/` and, on main and daily, publishes the store index, icons and ad filters to the `store` branch (`store.yml`). `tools/xbox.sh` installs a build on a console through Device Portal.

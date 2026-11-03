@@ -13,7 +13,7 @@ OpenBox/Generated Files/
 *.msix
 *.appxbundle
 *.msixbundle
-packages/
+/packages/
 project.lock.json
 
 # Build output: the store index, and the ad filters (tools/build_adblock.py)
