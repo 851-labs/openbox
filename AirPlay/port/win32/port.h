@@ -26,6 +26,8 @@ typedef SSIZE_T ssize_t;
 #define strncasecmp _strnicmp
 #define strcasecmp _stricmp
 #define random() rand()
+/* Winsock's IPPROTO_TCP is an enum value, so UxPlay's "#if defined(IPPROTO_TCP)" misses it. */
+#define SOL_TCP IPPROTO_TCP
 #define srandom(seed) srand(seed)
 
 #endif

@@ -62,9 +62,9 @@ jobs:
 
       # The AirPlay receiver (AirPlay/), with FFmpeg's audio decoders built into it. FFmpeg only
       # changes with tools/build_ffmpeg.sh, so it's cached.
-      - name: Cache FFmpeg
+      - name: Restore FFmpeg
         id: ffmpeg-cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: C:\ffmpeg
           key: ffmpeg-${{ hashFiles('tools/build_ffmpeg.sh') }}
@@ -83,6 +83,13 @@ jobs:
           MSYS2_PATH_TYPE: inherit
           CHERE_INVOKING: 1
         run: C:\msys64\usr\bin\bash.exe -lc "pacman -Sy --noconfirm --needed make diffutils && rm -f /usr/bin/link.exe && tools/build_ffmpeg.sh /c/ffmpeg"
+
+      - name: Save FFmpeg
+        if: steps.ffmpeg-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: C:\ffmpeg
+          key: ${{ steps.ffmpeg-cache.outputs.cache-primary-key }}
 
       - name: Build AirPlay receiver
         shell: pwsh
