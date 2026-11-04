@@ -52,6 +52,13 @@ jobs:
           $base = [version]$xml.Package.Identity.Version
           $version = "$($base.Major).$($base.Minor).$env:GITHUB_RUN_NUMBER.0"
           $xml.Package.Identity.Version = $version
+          if ($env:CONFIGURATION -eq 'Debug') {
+            # The 'pad' dev command injects controller presses: Debug builds only.
+            $rescap = 'http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities'
+            $capability = $xml.CreateElement('rescap', 'Capability', $rescap)
+            $capability.SetAttribute('Name', 'inputInjectionBrokered')
+            $xml.Package.Capabilities.AppendChild($capability) | Out-Null
+          }
           $xml.Save($manifest)
           "Version: $version"
 

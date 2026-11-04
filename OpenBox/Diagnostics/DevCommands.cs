@@ -8,12 +8,14 @@ using OpenBox.Apps;
 using OpenBox.Packages;
 using OpenBox.Store;
 using OpenBox.Web;
+using Windows.Gaming.Input;
 using Windows.Management.Deployment;
 using Windows.Security.Credentials;
 using Windows.Security.Cryptography.Certificates;
 using Windows.Storage;
 using Windows.Web.Http;
 using Windows.Web.Http.Filters;
+using Windows.UI.Input.Preview.Injection;
 using Windows.UI.Xaml;
 
 namespace OpenBox.Diagnostics
@@ -34,6 +36,11 @@ namespace OpenBox.Diagnostics
     ///                  select (A), back (B), x, y, lb, rb, lt, rt, menu
     ///   script &lt;js&gt;    run JavaScript in a web app's page and log what it returns
     ///   hidekeyboard   close the console's keyboard, as its B button would
+    ///   pad &lt;button&gt;...  a real controller press, injected into the console's input (so the
+    ///                  console's keyboard gets it too): a, b, x, y, up, down, left, right, menu,
+    ///                  view, lb, rb, lt, rt, each optionally *n (right*4); 0.35 s apart. Needs
+    ///                  the inputInjectionBrokered capability, which the workflow adds to Debug
+    ///                  builds only
     /// </summary>
     internal static class DevCommands
     {
@@ -62,6 +69,57 @@ namespace OpenBox.Diagnostics
                 Run(command);
             };
             _timer.Start();
+        }
+
+        private static InputInjector _injector;
+
+        private static async Task PadAsync(string[] presses)
+        {
+            if (_injector == null)
+            {
+                _injector = InputInjector.TryCreate();
+                if (_injector == null)
+                {
+                    Log.Write("pad: no input injector");
+                    return;
+                }
+                _injector.InitializeGamepadInjection();
+                await Task.Delay(500);
+            }
+            foreach (var press in presses)
+            {
+                var parts = press.Split('*');
+                var times = parts.Length > 1 ? int.Parse(parts[1]) : 1;
+                var info = new InjectedInputGamepadInfo();
+                switch (parts[0])
+                {
+                    case "a": info.Buttons = GamepadButtons.A; break;
+                    case "b": info.Buttons = GamepadButtons.B; break;
+                    case "x": info.Buttons = GamepadButtons.X; break;
+                    case "y": info.Buttons = GamepadButtons.Y; break;
+                    case "up": info.Buttons = GamepadButtons.DPadUp; break;
+                    case "down": info.Buttons = GamepadButtons.DPadDown; break;
+                    case "left": info.Buttons = GamepadButtons.DPadLeft; break;
+                    case "right": info.Buttons = GamepadButtons.DPadRight; break;
+                    case "menu": info.Buttons = GamepadButtons.Menu; break;
+                    case "view": info.Buttons = GamepadButtons.View; break;
+                    case "lb": info.Buttons = GamepadButtons.LeftShoulder; break;
+                    case "rb": info.Buttons = GamepadButtons.RightShoulder; break;
+                    case "lt": info.LeftTrigger = 1; break;
+                    case "rt": info.RightTrigger = 1; break;
+                    default:
+                        Log.Write("pad: no button " + parts[0]);
+                        return;
+                }
+                for (var i = 0; i < times; i++)
+                {
+                    _injector.InjectGamepadInput(info);
+                    await Task.Delay(120);
+                    _injector.InjectGamepadInput(new InjectedInputGamepadInfo());
+                    await Task.Delay(350);
+                }
+            }
+            Log.Write("pad: done");
         }
 
         private static async void Run(string command)
@@ -166,6 +224,9 @@ namespace OpenBox.Diagnostics
                             page.Press(action);
                             await Task.Delay(800);
                         }
+                        break;
+                    case "pad":
+                        await PadAsync(id.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
                         break;
                     default:
                         Log.Write("Unknown dev command");
