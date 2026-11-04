@@ -6,7 +6,11 @@ using System.Text.RegularExpressions;
 using OpenBox.Apps;
 using OpenBox.Packages;
 using OpenBox.Store;
+using Windows.Security.Credentials;
+using Windows.Security.Cryptography.Certificates;
 using Windows.Storage;
+using Windows.Web.Http;
+using Windows.Web.Http.Filters;
 using Windows.UI.Xaml;
 
 namespace OpenBox.Diagnostics
@@ -20,6 +24,8 @@ namespace OpenBox.Diagnostics
     ///   install &lt;id&gt;   install a store app, as A on it in the Store
     ///   uninstall &lt;id&gt; uninstall a homescreen app, as Uninstall in its menu (asks first)
     ///   home           go back to the homescreen
+    ///   probe &lt;url&gt; [user] [password]  GET an address, ignoring certificate errors (the
+    ///                  console's own Device Portal, say); the credentials aren't logged
     /// </summary>
     internal static class DevCommands
     {
@@ -52,7 +58,7 @@ namespace OpenBox.Diagnostics
 
         private static async void Run(string command)
         {
-            Log.Write("Dev command: " + command);
+            Log.Write("Dev command: " + (command.StartsWith("probe ") ? string.Join(" ", command.Split(' ').Take(2)) : command));
             var parts = command.Split(new[] { ' ' }, 2);
             var id = parts.Length > 1 ? parts[1].Trim() : string.Empty;
             try
@@ -90,6 +96,30 @@ namespace OpenBox.Diagnostics
                         break;
                     case "home":
                         App.GoHome();
+                        break;
+                    case "probe":
+                        var args = id.Split(' ');
+                        var filter = new HttpBaseProtocolFilter();
+                        filter.IgnorableServerCertificateErrors.Add(ChainValidationResult.Untrusted);
+                        filter.IgnorableServerCertificateErrors.Add(ChainValidationResult.InvalidName);
+                        filter.IgnorableServerCertificateErrors.Add(ChainValidationResult.Expired);
+                        if (args.Length >= 3)
+                        {
+                            filter.ServerCredential = new PasswordCredential("probe", args[1], args[2]);
+                        }
+                        using (var client = new HttpClient(filter))
+                        {
+                            try
+                            {
+                                var response = await client.GetAsync(new Uri(args[0]));
+                                var body = await response.Content.ReadAsStringAsync();
+                                Log.Write("probe " + args[0] + ": " + (int)response.StatusCode + " " + body.Substring(0, Math.Min(body.Length, 200)));
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.Write(string.Format("probe {0}: 0x{1:X8} {2}", args[0], ex.HResult, ex.Message.Split('\r', '\n')[0]));
+                            }
+                        }
                         break;
                     default:
                         Log.Write("Unknown dev command");
