@@ -211,6 +211,12 @@ namespace OpenBox.Web
         {
             OnControllerAction(action, false);
         }
+
+        /// <summary>Runs script in the page, from Diagnostics/DevCommands: its result, as JSON.</summary>
+        internal async Task<string> RunScriptAsync(string script)
+        {
+            return _core == null ? "(not loaded)" : await _core.ExecuteScriptAsync(script);
+        }
 #endif
 
         private async void SendInput(string action, bool repeat)

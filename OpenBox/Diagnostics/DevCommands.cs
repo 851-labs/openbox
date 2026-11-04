@@ -30,6 +30,7 @@ namespace OpenBox.Diagnostics
     ///                  console's own Device Portal, say); the credentials aren't logged
     ///   press &lt;action&gt;... controller presses in a web app, 0.8 s apart: up, down, left, right,
     ///                  select (A), back (B), x, y, lb, rb, lt, rt, menu
+    ///   script &lt;js&gt;    run JavaScript in a web app's page and log what it returns
     /// </summary>
     internal static class DevCommands
     {
@@ -129,6 +130,10 @@ namespace OpenBox.Diagnostics
                                 Log.Write(string.Format("probe {0}: 0x{1:X8} {2}", args[0], ex.HResult, ex.Message.Split('\r', '\n')[0]));
                             }
                         }
+                        break;
+                    case "script":
+                        var scripted = App.CurrentPage as WebAppPage;
+                        Log.Write(scripted == null ? "No web app is open" : "Script: " + await scripted.RunScriptAsync(id));
                         break;
                     case "press":
                         foreach (var action in id.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))
