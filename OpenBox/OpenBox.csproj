@@ -25,6 +25,8 @@
     <AppxBundle>Never</AppxBundle>
     <AppxBundlePlatforms>x64</AppxBundlePlatforms>
     <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
+    <!-- AirPlay/MirrorPlayer.cs copies audio straight into the audio graph's buffers. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -55,6 +57,12 @@
   <ItemGroup>
     <Compile Include="AdBlock\AdBlocker.cs" />
     <Compile Include="AdBlock\AdFilters.cs" />
+    <Compile Include="AirPlay\AirPlayNative.cs" />
+    <Compile Include="AirPlay\AirPlayPage.xaml.cs">
+      <DependentUpon>AirPlayPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="AirPlay\AirPlayReceiver.cs" />
+    <Compile Include="AirPlay\MirrorPlayer.cs" />
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
@@ -104,12 +112,20 @@
     <Content Include="YouTube\Inject\filters.json" />
     <Content Include="X\Inject\tv.js" />
     <Content Include="X\Inject\tv.css" />
+    <!-- The AirPlay receiver, from AirPlay/: CI builds it and copies it here first. -->
+    <Content Include="AirPlay\airplay.dll" Condition="Exists('AirPlay\airplay.dll')">
+      <Link>airplay.dll</Link>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Page Include="AirPlay\AirPlayPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Home\HomePage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

@@ -1,0 +1,39 @@
+<Page
+    x:Class="OpenBox.AirPlay.AirPlayPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ob="using:OpenBox.Controls"
+    IsTabStop="True"
+    Background="Black">
+
+    <Grid Background="Black">
+        <!-- The mirrored screen, edge to edge. -->
+        <MediaPlayerElement x:Name="Screen" AreTransportControlsEnabled="False" Stretch="Uniform" />
+
+        <!-- Until something is mirrored: how to mirror to the console. -->
+        <Grid x:Name="WaitingPanel" Background="{StaticResource ShellBackgroundBrush}" Padding="48,32,48,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="600" Spacing="14">
+                <Grid Width="132" Height="74" CornerRadius="8" Background="#FF0A84FF" HorizontalAlignment="Center">
+                    <Image Source="ms-appx:///Assets/Apps/airplay.png" Width="44" Height="44" />
+                </Grid>
+                <TextBlock x:Name="Title" FontSize="28" FontWeight="SemiBold" HorizontalAlignment="Center" TextAlignment="Center"
+                    TextWrapping="Wrap" Margin="0,8,0,0" />
+                <TextBlock x:Name="Message" FontSize="16" Opacity="0.75" HorizontalAlignment="Center" TextAlignment="Center"
+                    TextWrapping="Wrap" />
+                <TextBlock x:Name="Details" FontSize="13" Opacity="0.5" HorizontalAlignment="Center" TextAlignment="Center"
+                    TextWrapping="Wrap" />
+            </StackPanel>
+            <ob:HintBar x:Name="Hints" Grid.Row="1" Margin="0,16,0,27" />
+        </Grid>
+
+        <!-- Shown for a moment when mirroring starts. -->
+        <Border x:Name="MirrorHintsPanel" Visibility="Collapsed" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+            Margin="0,0,48,27" Padding="16,8" CornerRadius="19" Background="#E6111114" IsHitTestVisible="False">
+            <ob:HintBar x:Name="MirrorHints" />
+        </Border>
+    </Grid>
+</Page>

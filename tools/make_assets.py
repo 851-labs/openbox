@@ -140,9 +140,24 @@ def store_icon(path):
     finish(image, size, size, path)
 
 
+def airplay_icon(path):
+    """AirPlay's mark: a screen with a triangle rising into the gap at its bottom."""
+    size = 256
+    image, draw = canvas(size, size)
+    k = SUPERSAMPLE
+    stroke = 16 * k
+    draw.rounded_rectangle([36 * k, 44 * k, 220 * k, 178 * k], radius=20 * k, outline=WHITE, width=stroke)
+    # Clear the gap around the triangle (transparent), then draw the triangle.
+    cx = size * k / 2
+    draw.polygon([(cx - 70 * k, 226 * k), (cx + 70 * k, 226 * k), (cx, 124 * k)], fill=(0, 0, 0, 0))
+    draw.polygon([(cx - 46 * k, 214 * k), (cx + 46 * k, 214 * k), (cx, 148 * k)], fill=WHITE)
+    finish(image, size, size, path)
+
+
 if __name__ == "__main__":
     package_logos()
     youtube_icon(f"{ROOT}/Apps/youtube.png")
     x_icon(f"{ROOT}/Apps/x.png")
     store_icon(f"{ROOT}/Apps/store.png")
+    airplay_icon(f"{ROOT}/Apps/airplay.png")
     logo(256, 256, 150, f"{ROOT}/Apps/openbox.png", background=(0, 0, 0, 0))

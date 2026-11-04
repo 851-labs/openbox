@@ -16,9 +16,12 @@ OpenBox/Generated Files/
 /packages/
 project.lock.json
 
-# Build output: the store index, and the ad filters (tools/build_adblock.py)
+# Build output: the store index, the ad filters (tools/build_adblock.py), and the AirPlay
+# receiver (AirPlay/, copied into the app by CI)
 _site/
 OpenBox/AdBlock/adblock.json
+/build/
+OpenBox/AirPlay/airplay.dll
 
 # Python
 __pycache__/

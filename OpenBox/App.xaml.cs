@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using OpenBox.AdBlock;
+using OpenBox.AirPlay;
 using OpenBox.Apps;
 using OpenBox.Diagnostics;
 using OpenBox.Home;
@@ -28,6 +29,8 @@ namespace OpenBox
             Log.Start();
             Log.Write("openbox starting, version " + VersionText());
             this.UnhandledException += OnUnhandledException;
+            this.Suspending += OnSuspending;
+            this.Resuming += OnResuming;
             TaskScheduler.UnobservedTaskException += (s, e) => Log.Error("Unobserved task exception", e.Exception);
 
             // WebView2 reads these when it starts its browser process, so they must be set before the
@@ -68,6 +71,8 @@ namespace OpenBox
                         GoHome();
                     }
                 };
+                // Something mirrored to the console shows up wherever openbox is.
+                AirPlayReceiver.MirroringStarted += (s, args) => ShowAirPlay();
             }
 
             if (e.PrelaunchActivated == false)
@@ -88,6 +93,8 @@ namespace OpenBox
                 // The ad filters take a moment to load: have them ready by the time an app opens.
                 AdFilters.Preload();
                 StoreIndex.RefreshInstalled();
+                // Senders can find the console while openbox runs.
+                AirPlayReceiver.Start(Window.Current.Dispatcher);
 #if DEBUG
                 DevCommands.Start();
 #endif
@@ -121,6 +128,24 @@ namespace OpenBox
             get { return _frame?.Content; }
         }
 
+        /// <summary>Shows what's being mirrored to the console, from wherever.</summary>
+        internal static void ShowAirPlay()
+        {
+            if (!(_frame.Content is AirPlayPage))
+            {
+                _frame.Navigate(typeof(AirPlayPage), AirPlayPage.Incoming);
+            }
+        }
+
+        /// <summary>Back a page.</summary>
+        internal static void GoBack()
+        {
+            if (_frame.CanGoBack)
+            {
+                _frame.GoBack();
+            }
+        }
+
         /// <summary>Back to the homescreen, from wherever.</summary>
         internal static void GoHome()
         {
@@ -141,6 +166,25 @@ namespace OpenBox
             // Handled either way: unhandled, B would close openbox.
             e.Handled = true;
             (_frame.Content as IBackHandler)?.HandleBack();
+        }
+
+        // Senders shouldn't see the console while openbox is suspended, and it comes back on resume.
+        private async void OnSuspending(object sender, SuspendingEventArgs e)
+        {
+            var deferral = e.SuspendingOperation.GetDeferral();
+            try
+            {
+                await AirPlayReceiver.StopAsync();
+            }
+            finally
+            {
+                deferral.Complete();
+            }
+        }
+
+        private void OnResuming(object sender, object e)
+        {
+            AirPlayReceiver.Start(Window.Current.Dispatcher);
         }
 
         private void OnUnhandledException(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
