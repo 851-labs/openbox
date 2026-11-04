@@ -95,6 +95,7 @@ namespace OpenBox.AirPlay
         public void PushVideo(IntPtr data, int length, long time)
         {
             var keyFrame = IsKeyFrame(data, length);
+            MediaStreamSourceSampleRequestDeferral answered = null;
             lock (_lock)
             {
                 if (_source == null)
@@ -135,7 +136,7 @@ namespace OpenBox.AirPlay
                 if (_waitingRequest != null)
                 {
                     _waitingRequest.Sample = sample;
-                    _waitingDeferral.Complete();
+                    answered = _waitingDeferral;
                     _waitingRequest = null;
                     _waitingDeferral = null;
                 }
@@ -144,6 +145,8 @@ namespace OpenBox.AirPlay
                     _frames.Enqueue(sample);
                 }
             }
+            // Outside the lock: the player may ask for the next sample straight away.
+            answered?.Complete();
         }
 
         private void OnSampleRequested(MediaStreamSource sender, MediaStreamSourceSampleRequestedEventArgs args)
