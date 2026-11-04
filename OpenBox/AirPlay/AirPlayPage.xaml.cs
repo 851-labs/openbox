@@ -100,7 +100,7 @@ namespace OpenBox.AirPlay
             {
                 case AirPlayState.Waiting:
                 case AirPlayState.Mirroring:
-                    Title.Text = "Mirror your screen to this " + name;
+                    Title.Text = "Mirror your screen to " + name;
                     Message.Text = "On a Mac, iPhone or iPad, open Control Center, choose Screen Mirroring, then choose “" +
                         name + "”. Its screen and sound play here.";
                     Details.Text = "Your device needs to be on the same network as this console" +
@@ -114,7 +114,7 @@ namespace OpenBox.AirPlay
                 case AirPlayState.Failed:
                     Title.Text = "AirPlay isn't working";
                     Message.Text = AirPlayReceiver.Problem ?? string.Empty;
-                    Details.Text = "openbox's log has more.";
+                    Details.Text = "OpenBox's log has more.";
                     break;
                 default:
                     Title.Text = "AirPlay";

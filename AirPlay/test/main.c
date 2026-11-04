@@ -52,7 +52,7 @@ static void on_audio_frame(const float *data, int count, int channels, int rate,
 static void on_signal(int sig) { (void) sig; stopping = 1; }
 
 int main(int argc, char **argv) {
-    const char *name = argc > 1 ? argv[1] : "openbox test";
+    const char *name = argc > 1 ? argv[1] : "OpenBox test";
     airplay_callbacks_t callbacks = {
         on_log, on_connected, on_disconnected, on_video_started, on_video_frame, on_video_stopped,
         on_audio_frame, on_volume,

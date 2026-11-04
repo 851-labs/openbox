@@ -16,7 +16,7 @@
   <mp:PhoneIdentity PhoneProductId="34117904-7268-4355-b4ee-81d62d404222" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
-    <DisplayName>openbox</DisplayName>
+    <DisplayName>OpenBox</DisplayName>
     <PublisherDisplayName>851 Labs</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
@@ -34,7 +34,7 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="OpenBox.App">
       <uap:VisualElements
-        DisplayName="openbox"
+        DisplayName="OpenBox"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png"
         Description="A homescreen of apps for Xbox Developer Mode."

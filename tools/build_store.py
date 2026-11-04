@@ -55,7 +55,7 @@ def check_app(file_name):
     if not ID.match(app_id):
         error("the file name is the app's id: lowercase letters, digits and dashes only")
     if app_id in RESERVED:
-        error(f'"{app_id}" is built into openbox')
+        error(f'"{app_id}" is built into OpenBox')
     try:
         with open(os.path.join(APPS, file_name), encoding="utf-8") as f:
             app = json.load(f)

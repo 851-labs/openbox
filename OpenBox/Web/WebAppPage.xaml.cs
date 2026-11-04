@@ -143,7 +143,7 @@ namespace OpenBox.Web
             catch (Exception ex)
             {
                 Log.Error("Preparing " + _app.Id + " failed", ex);
-                ShowLoadError("openbox couldn't prepare " + _app.Name + ". " + ex.Message);
+                ShowLoadError("OpenBox couldn't prepare " + _app.Name + ". " + ex.Message);
                 return;
             }
             if (_closed)

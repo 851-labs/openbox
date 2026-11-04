@@ -1,6 +1,6 @@
 # Store apps
 
-Each app in openbox's Store is a JSON file in this folder, with its icon in `icons/`. To add one, open a pull request with both files. CI checks them, and once the pull request is merged the app appears in the Store on every console.
+Each app in OpenBox's Store is a JSON file in this folder, with its icon in `icons/`. To add one, open a pull request with both files. CI checks them, and once the pull request is merged the app appears in the Store on every console.
 
 `apps/my-app.json`:
 
@@ -27,7 +27,7 @@ Each app in openbox's Store is a JSON file in this folder, with its icon in `ico
 
 In every app, View goes back to the homescreen. B goes back a page (with `"remote"`, it's the app's own back key, and the app going home when it closes itself).
 
-Every app gets openbox's ad blocker; there's nothing to set.
+Every app gets OpenBox's ad blocker; there's nothing to set.
 
 ## Package apps
 
@@ -49,14 +49,14 @@ An app can also be an app package of its own (an `.appx` or `.msix`) instead of 
 }
 ```
 
-- `package.url`: the package, where its developer publishes it. openbox downloads it from there and never hosts a copy, so link the official download.
+- `package.url`: the package, where its developer publishes it. OpenBox downloads it from there and never hosts a copy, so link the official download.
 - `package.sha256Url` (optional): a file whose first word is the package's SHA-256, published with it. The download is checked against it.
 - `package.familyName`: the installed package's family name, from its manifest's Identity (`Name_PublisherId`).
 - `package.appId` (optional, `App` by default): the Application Id the tile opens.
 - `credit` (optional, any app): who made it, with a link, up to 100 characters. It's shown in the Store, so use it when an app's terms ask for credit.
 
-**Not usable on Xbox yet.** On the console a package installed this way is registered only for openbox's own account (`UserMgr0`), while the console launches apps as `DefaultAccount`, so it won't open. Registering it for every account (`ProvisionPackageForAllUsersAsync`) is refused, and openbox can't reach the console's own Device Portal, which does register apps for both. A package installed through Device Portal from another device opens from its tile. Until there's a way around this, the Store has no package apps.
+**Not usable on Xbox yet.** On the console a package installed this way is registered only for OpenBox's own account (`UserMgr0`), while the console launches apps as `DefaultAccount`, so it won't open. Registering it for every account (`ProvisionPackageForAllUsersAsync`) is refused, and OpenBox can't reach the console's own Device Portal, which does register apps for both. A package installed through Device Portal from another device opens from its tile. Until there's a way around this, the Store has no package apps.
 
-The package's dependencies must already be on the console. Apps built like openbox need `Microsoft.VCLibs.140.00`, which openbox itself brings.
+The package's dependencies must already be on the console. Apps built like OpenBox need `Microsoft.VCLibs.140.00`, which OpenBox itself brings.
 
 To check your files before opening the pull request, run `python3 tools/build_store.py`.

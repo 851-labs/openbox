@@ -29,7 +29,7 @@
 
         <StackPanel Orientation="Horizontal" Spacing="10">
             <Image Source="ms-appx:///Assets/Apps/openbox.png" Width="30" Height="30" />
-            <TextBlock Text="openbox" FontSize="24" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <TextBlock Text="OpenBox" FontSize="24" FontWeight="SemiBold" VerticalAlignment="Center" />
         </StackPanel>
         <TextBlock x:Name="Clock" FontSize="20" Opacity="0.8" HorizontalAlignment="Right" VerticalAlignment="Center" />
 

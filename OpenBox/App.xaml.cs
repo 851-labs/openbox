@@ -27,7 +27,7 @@ namespace OpenBox
         public App()
         {
             Log.Start();
-            Log.Write("openbox starting, version " + VersionText());
+            Log.Write("OpenBox starting, version " + VersionText());
             this.UnhandledException += OnUnhandledException;
             this.Suspending += OnSuspending;
             this.Resuming += OnResuming;
@@ -199,7 +199,7 @@ namespace OpenBox
         {
             var text = new TextBlock
             {
-                Text = "openbox hit an error and can't continue:" + Environment.NewLine + Environment.NewLine +
+                Text = "OpenBox hit an error and can't continue:" + Environment.NewLine + Environment.NewLine +
                     "Version " + VersionText() + Environment.NewLine + error,
                 Foreground = new SolidColorBrush(Colors.White),
                 TextWrapping = TextWrapping.Wrap,

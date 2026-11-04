@@ -17,7 +17,7 @@ namespace OpenBox.AirPlay
     /// </summary>
     internal static class AirPlayReceiver
     {
-        public const string Name = "Xbox";
+        public const string Name = "OpenBox";
         // What senders are asked to mirror at: the console's output.
         private const int Width = 1920;
         private const int Height = 1080;

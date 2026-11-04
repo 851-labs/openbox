@@ -295,10 +295,14 @@ namespace OpenBox.AirPlay
             }
         }
 
-        /// <summary>The sender's volume: -30 dB (its quietest) to 0, or -144 for muted.</summary>
+        /// <summary>
+        /// The sender's volume: -30 dB (its quietest) to 0, or -144 for muted. Only muting is
+        /// followed: the TV has a volume of its own, and a Mac sends -30 dB when its own volume is
+        /// low, which would leave the TV all but silent.
+        /// </summary>
         public void SetVolume(float decibels)
         {
-            _gain = decibels <= -144 ? 0 : Math.Pow(10, Math.Max(-30, Math.Min(0, decibels)) / 20);
+            _gain = decibels <= -144 ? 0 : 1;
             Log.Write(string.Format("AirPlay: volume {0:0.0} dB (gain {1:0.000})", decibels, _gain));
             lock (_lock)
             {
