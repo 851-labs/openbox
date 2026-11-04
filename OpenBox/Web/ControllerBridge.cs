@@ -58,6 +58,17 @@ namespace OpenBox.Web
         /// <summary>While true the controller is left to XAML, e.g. for a dialog or the load error screen.</summary>
         public bool Paused { get; set; }
 
+#if DEBUG
+        /// <summary>A press of a button, from Diagnostics/DevCommands: ignored while paused, as a real one is.</summary>
+        public void Press(string action)
+        {
+            if (!Paused)
+            {
+                _send(action, false);
+            }
+        }
+#endif
+
         public void Dispose()
         {
             _timer.Stop();

@@ -9,6 +9,7 @@ using Windows.Data.Json;
 using Windows.Storage;
 using Windows.System;
 using Windows.System.Profile;
+using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
@@ -22,8 +23,7 @@ namespace OpenBox.Web
     /// (<see cref="AppEntry.RemoteInput"/>): as a TV remote, for web apps made for TVs (YouTube),
     /// or as the console's mouse pointer, as in a browser. B goes back within the app (a TV app
     /// gets it as its own back key, and goes home when it closes itself; a web page goes back a
-    /// page) and View goes home. A TV app whose script reads the controller itself (X) can also ask
-    /// for the pointer for a while, for pages it can't drive (sign-in).
+    /// page) and View goes home.
     /// </summary>
     public sealed partial class WebAppPage : Page, IBackHandler
     {
@@ -36,7 +36,7 @@ namespace OpenBox.Web
         private ControllerBridge _controller;
         private bool _loaded;
         private bool _closed;
-        private bool _pointer;
+        private InputPane _inputPane;
 
         public WebAppPage()
         {
@@ -58,7 +58,14 @@ namespace OpenBox.Web
             Splash.Background = _app.Background;
             SplashIcon.Source = _app.IconImage;
             // The console's mouse pointer for ordinary web pages, none for TV apps.
-            SetPointer(!_app.RemoteInput);
+            var pointer = _app.RemoteInput ? RequiresPointer.Never : RequiresPointer.WhenFocused;
+            RequiresPointer = pointer;
+            WebView.RequiresPointer = pointer;
+            // While the console's keyboard is up the controller is the keyboard's: a TV app doesn't
+            // also get its presses (X's sign-in would move off the text box being typed in).
+            _inputPane = InputPane.GetForCurrentView();
+            _inputPane.Showing += OnKeyboardShowing;
+            _inputPane.Hiding += OnKeyboardHiding;
             StartAsync();
         }
 
@@ -66,6 +73,8 @@ namespace OpenBox.Web
         {
             base.OnNavigatedFrom(e);
             _closed = true;
+            _inputPane.Showing -= OnKeyboardShowing;
+            _inputPane.Hiding -= OnKeyboardHiding;
             _controller?.Dispose();
             _extension?.Dispose();
             _adBlocker?.Dispose();
@@ -206,10 +215,16 @@ namespace OpenBox.Web
         }
 
 #if DEBUG
-        /// <summary>A controller press, from Diagnostics/DevCommands.</summary>
+        /// <summary>A controller press, from Diagnostics/DevCommands: as if from the controller.</summary>
         internal void Press(string action)
         {
-            OnControllerAction(action, false);
+            _controller?.Press(action);
+        }
+
+        /// <summary>Closes the console's keyboard, from Diagnostics/DevCommands, as its B button would.</summary>
+        internal bool HideKeyboard()
+        {
+            return _inputPane.TryHide();
         }
 
         /// <summary>Runs script in the page, from Diagnostics/DevCommands: its result, as JSON.</summary>
@@ -241,14 +256,24 @@ namespace OpenBox.Web
             }
         }
 
-        // The console's mouse pointer, on or off. A TV app that reads the controller itself turns it
-        // on for the pages it can't drive (X's sign-in), and the console's keyboard with it.
-        private void SetPointer(bool on)
+        private void OnKeyboardShowing(InputPane sender, InputPaneVisibilityEventArgs e)
         {
-            _pointer = on;
-            var pointer = on ? RequiresPointer.WhenFocused : RequiresPointer.Never;
-            RequiresPointer = pointer;
-            WebView.RequiresPointer = pointer;
+            Log.Write("Keyboard up");
+            if (_controller != null)
+            {
+                _controller.Paused = true;
+            }
+        }
+
+        // The keyboard's own B (or its accept button) closes it. On the console InputPane.Visible
+        // and the occluded area stay empty while it's up, so these two events are all there is.
+        private void OnKeyboardHiding(InputPane sender, InputPaneVisibilityEventArgs e)
+        {
+            Log.Write("Keyboard down");
+            if (_controller != null)
+            {
+                _controller.Paused = LoadErrorPanel.Visibility == Visibility.Visible;
+            }
         }
 
         private void OnWebMessageReceived(CoreWebView2 sender, CoreWebView2WebMessageReceivedEventArgs e)
@@ -272,28 +297,17 @@ namespace OpenBox.Web
                     Log.Write(_app.Id + " closed itself");
                     App.GoHome();
                     break;
-                case "app.pointer":
-                    var on = message.GetNamedValue("on", JsonValue.CreateNullValue());
-                    if (_app.RemoteInput && _extension != null && _extension.HandlesInput &&
-                        on.ValueType == JsonValueType.Boolean && on.GetBoolean() != _pointer)
-                    {
-                        Log.Write(_app.Id + (on.GetBoolean() ? " asked for the pointer" : " gave back the pointer"));
-                        SetPointer(on.GetBoolean());
-                        WebView.Focus(FocusState.Programmatic);
-                    }
-                    break;
             }
         }
 
         private void OnPreviewKeyDown(object sender, KeyRoutedEventArgs e)
         {
             // In a TV app ControllerBridge handles the controller. Stop XAML from also using its
-            // buttons to move focus out of the web page, except on the load error screen and while
-            // the app has the pointer.
+            // buttons to move focus out of the web page, except on the load error screen.
             var key = (int)e.Key;
             var isController = (key >= (int)VirtualKey.GamepadA && key <= (int)VirtualKey.GamepadRightThumbstickLeft) ||
                 (key >= (int)VirtualKey.NavigationView && key <= (int)VirtualKey.NavigationCancel);
-            if (isController && _app.RemoteInput && !_pointer && LoadErrorPanel.Visibility == Visibility.Collapsed)
+            if (isController && _app.RemoteInput && LoadErrorPanel.Visibility == Visibility.Collapsed)
             {
                 e.Handled = true;
                 if (!IsInWebView(FocusManager.GetFocusedElement() as DependencyObject))

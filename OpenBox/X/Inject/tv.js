@@ -9,9 +9,10 @@
  *   B             closes the video, then goes back a page, then leaves X
  *
  * The app posts the controller as {type: 'input', action, repeat} (Web/ControllerBridge.cs), as it
- * does for remote.js, which X doesn't get: on sign-in (/i/flow/...) this turns itself off and asks
- * for the console's mouse pointer instead, so the page, the console's keyboard and the
- * controller work as in a browser. B still goes back there.
+ * does for remote.js, which X doesn't get. Sign-in (/i/flow/..., and the pages around it) is a form,
+ * not a timeline: there the D-pad moves a focus ring between its fields and buttons, A on a field
+ * opens the console's keyboard and A on a button presses it, and B leaves the field, then goes
+ * back a step.
  *
  * X recycles the timeline's elements as it scrolls, so the focus follows a post's id, not an
  * element, and a MutationObserver puts it back on the right post whenever X re-renders.
@@ -20,8 +21,15 @@ if (isTop && webview && /(^|\.)(x|twitter)\.com$/.test(location.hostname)) (func
     var POSTS = '[data-testid="primaryColumn"] article[data-testid="tweet"]';
     var VIDEOS_URL = '/search?q=' + encodeURIComponent('filter:native_video min_faves:2000 lang:en') +
         '&src=typed_query&f=top';
-    /* Pages the D-pad can't drive: sign-in, sign-up and the signed-out start page. */
-    var POINTER_PAGES = /^\/(?:$|i\/flow\/|i\/jf\/|login|logout|account\/|i\/oauth|i\/bouncer)/;
+    /* Forms rather than timelines: sign-in, sign-up and the signed-out start page. */
+    var FORM_PAGES = /^\/(?:$|i\/flow\/|i\/jf\/|login|logout|account\/|i\/oauth|i\/bouncer)/;
+    var FIELDS = 'input:not([type="hidden"]):not([disabled]), textarea, select, button:not([disabled]), ' +
+        'a[href], [role="button"]:not([aria-disabled="true"]), [role="link"], [role="checkbox"], ' +
+        '[role="radio"], [role="switch"], [role="option"], [role="tab"], [contenteditable="true"]';
+    var TEXT_TYPES = /^(?:text|email|password|tel|number|search|url)$/;
+    /* Google's and Apple's sign-in need a pop-up window, which the app doesn't have: the D-pad
+       skips their buttons (Google's is an iframe of its own). */
+    var POPUP_SIGN_IN = /\b(?:Google|Apple)\b/;
     var SEEK_SECONDS = 10;
     var BAR_HEIGHT = 64;
     var KEY_ACTION = {
@@ -30,7 +38,7 @@ if (isTop && webview && /(^|\.)(x|twitter)\.com$/.test(location.hostname)) (func
     };
 
     var on = false;
-    var pointer = null;
+    var formEl = null;
     var focusId = null;
     var focusEl = null;
     var focusByUrl = {};
@@ -70,16 +78,12 @@ if (isTop && webview && /(^|\.)(x|twitter)\.com$/.test(location.hostname)) (func
         return location.pathname === '/search' && location.search === VIDEOS_URL.slice('/search'.length);
     }
 
-    /* The D-pad layer is on everywhere but sign-in. */
+    /* The timeline layer is on everywhere but sign-in, which is driven as a form. */
     function updateMode() {
-        var wanted = !POINTER_PAGES.test(location.pathname);
+        var wanted = !FORM_PAGES.test(location.pathname);
         if (wanted !== on) {
             on = wanted;
-            log(on ? 'D-pad layer on' : 'D-pad layer off for ' + location.pathname);
-        }
-        if (pointer !== !on) {
-            pointer = !on;
-            post('app.pointer', { on: pointer });
+            log(on ? 'Timeline layer on' : 'Form layer on for ' + location.pathname);
         }
     }
 
@@ -328,6 +332,186 @@ if (isTop && webview && /(^|\.)(x|twitter)\.com$/.test(location.hostname)) (func
         if (!document.fullscreenElement) closeViewer();
     });
 
+    /* -- forms (sign-in) ---------------------------------------------------------------------------- */
+
+    function isText(el) {
+        return !!el && (el.tagName === 'TEXTAREA' || el.isContentEditable ||
+            (el.tagName === 'INPUT' && TEXT_TYPES.test(el.type || 'text')));
+    }
+
+    function shown(el) {
+        var rect = el.getBoundingClientRect();
+        if (rect.width < 2 || rect.height < 2) return false;
+        var style = getComputedStyle(el);
+        return style.visibility !== 'hidden' && style.display !== 'none' && parseFloat(style.opacity) > 0.05;
+    }
+
+    /* What the D-pad can reach: the fields and buttons of X's dialog, or of the page if there's
+       none. A button inside another (a link around a button, say) counts once, as the outer one. */
+    function formDialog() {
+        var dialogs = Array.prototype.filter.call(document.querySelectorAll('[role="dialog"], [aria-modal="true"]'), shown);
+        return dialogs[dialogs.length - 1] || null;
+    }
+
+    function formFields() {
+        var scope = formDialog() || document.body;
+        if (!scope) return [];
+        return Array.prototype.filter.call(scope.querySelectorAll(FIELDS), function (el) {
+            if (el.querySelector('iframe') || (!isText(el) && POPUP_SIGN_IN.test(el.textContent))) return false;
+            if (el.tagName === 'INPUT' && (el.type === 'checkbox' || el.type === 'radio') && !shown(el)) {
+                // X draws its own box and hides the real one: the label stands in for it.
+                return false;
+            }
+            if (!shown(el)) return false;
+            var outer = el.parentElement && el.parentElement.closest(FIELDS);
+            return !outer || isText(el) || !scope.contains(outer);
+        });
+    }
+
+    /* The ring goes round a text box's whole frame: X draws it on the label around the input. */
+    function ringOf(el) {
+        return (isText(el) && el.closest('label')) || el;
+    }
+
+    function setFormFocus(el) {
+        var old = document.querySelectorAll('[data-openbox-ring]');
+        for (var i = 0; i < old.length; i++) old[i].removeAttribute('data-openbox-ring');
+        formEl = el;
+        if (!el) return;
+        ringOf(el).setAttribute('data-openbox-ring', '');
+        // Moving off a text box closes the keyboard's caret there; the box itself only takes the
+        // focus (and the keyboard comes up) on A.
+        var active = document.activeElement;
+        if (active && active !== el && active !== document.body && active.blur) active.blur();
+        if (!isText(el) && el.focus) el.focus({ preventScroll: true });
+        ringOf(el).scrollIntoView({ block: 'nearest' });
+    }
+
+    /* The first empty text box, as X's own autofocus would pick, or else the first button. */
+    function defaultField(fields) {
+        for (var i = 0; i < fields.length; i++) if (isText(fields[i]) && !fields[i].value) return fields[i];
+        for (var j = 0; j < fields.length; j++) if (isText(fields[j])) return fields[j];
+        return fields[0] || null;
+    }
+
+    function refocusForm() {
+        var fields = formFields();
+        if (formEl && fields.indexOf(formEl) >= 0) {
+            var ring = ringOf(formEl);
+            if (!ring.hasAttribute('data-openbox-ring')) ring.setAttribute('data-openbox-ring', '');
+            return;
+        }
+        // A new step of the flow (the password after the username, say): its first field.
+        setFormFocus(defaultField(fields));
+    }
+
+    /* The nearest field that way, going by the middle of each: straight lines first. */
+    function moveForm(action) {
+        var fields = formFields();
+        if (!formEl || fields.indexOf(formEl) < 0) {
+            setFormFocus(defaultField(fields));
+            return;
+        }
+        var from = formEl.getBoundingClientRect();
+        var fx = from.left + from.width / 2, fy = from.top + from.height / 2;
+        var vertical = action === 'up' || action === 'down';
+        var sign = action === 'down' || action === 'right' ? 1 : -1;
+        var best = null, bestScore = Infinity;
+        fields.forEach(function (el) {
+            if (el === formEl || ringOf(el) === ringOf(formEl)) return;
+            var rect = el.getBoundingClientRect();
+            var dx = rect.left + rect.width / 2 - fx, dy = rect.top + rect.height / 2 - fy;
+            var along = (vertical ? dy : dx) * sign, across = Math.abs(vertical ? dx : dy);
+            if (along < 4) return;
+            var score = along + across * (vertical ? 0.5 : 3);
+            if (score < bestScore) {
+                bestScore = score;
+                best = el;
+            }
+        });
+        if (best) setFormFocus(best);
+    }
+
+    /* A press of a button. X's sign-in pages answer pointer events rather than clicks on their
+       own div buttons (the arrow in the corner), and X's main app answers clicks: both get sent.
+       Native controls only need the click. */
+    function tap(el) {
+        if (!/^(?:BUTTON|A|INPUT|SELECT|TEXTAREA|LABEL)$/.test(el.tagName)) {
+            var rect = el.getBoundingClientRect();
+            var init = {
+                bubbles: true, cancelable: true, composed: true, view: window, button: 0, buttons: 1,
+                clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2,
+                pointerId: 1, pointerType: 'mouse', isPrimary: true
+            };
+            el.dispatchEvent(new PointerEvent('pointerdown', init));
+            el.dispatchEvent(new MouseEvent('mousedown', init));
+            init.buttons = 0;
+            el.dispatchEvent(new PointerEvent('pointerup', init));
+            el.dispatchEvent(new MouseEvent('mouseup', init));
+        }
+        el.click();
+    }
+
+    function pressField() {
+        var el = formEl;
+        if (!el || !el.isConnected) return;
+        if (isText(el)) {
+            // Focus again even if it already has it: that's what brings the console's keyboard up.
+            if (document.activeElement === el) el.blur();
+            el.focus();
+            el.click();
+            if (navigator.virtualKeyboard && navigator.virtualKeyboard.show) {
+                try { navigator.virtualKeyboard.show(); } catch (e) {}
+            }
+            log('Typing in ' + (el.name || el.type || el.tagName));
+        } else if (el.tagName === 'SELECT' && el.showPicker) {
+            try { el.showPicker(); } catch (e) { el.focus(); }
+        } else {
+            tap(el);
+        }
+    }
+
+    /* B: off the text box being typed in, then X's own arrow in the corner of its dialog (back a
+       step of the flow, or out of it), then out of X from the page behind. */
+    function formBack() {
+        if (isTyping()) {
+            document.activeElement.blur();
+            return;
+        }
+        var dialog = formDialog();
+        if (!dialog) {
+            post('app.exit', {});
+            return;
+        }
+        var corner = dialog.getBoundingClientRect();
+        var arrow = formFields().filter(function (el) {
+            var rect = el.getBoundingClientRect();
+            return !el.textContent.trim() && !isText(el) &&
+                rect.left - corner.left < 120 && rect.top - corner.top < 120;
+        })[0];
+        if (!arrow) {
+            post('app.exit', {});
+            return;
+        }
+        // On the flow's first step the arrow may do nothing: then B leaves X, as it would anywhere.
+        var before = location.href + formFields().length;
+        var step = formFields()[0];
+        tap(arrow);
+        setTimeout(function () {
+            var fields = formFields();
+            if (location.href + fields.length === before && fields[0] === step) post('app.exit', {});
+        }, 500);
+    }
+
+    function handleForm(action) {
+        switch (action) {
+            case 'up': case 'down': case 'left': case 'right': moveForm(action); break;
+            case 'select': pressField(); break;
+            case 'back': formBack(); break;
+        }
+        schedule();
+    }
+
     /* -- feeds ------------------------------------------------------------------------------------- */
 
     function homeTabs() {
@@ -450,7 +634,11 @@ if (isTop && webview && /(^|\.)(x|twitter)\.com$/.test(location.hostname)) (func
         }
         updateMode();
         dressPage();
-        if (!on) return;
+        if (!on) {
+            if (document.body) refocusForm();
+            return;
+        }
+        if (formEl) setFormFocus(null);
         if (pendingTab >= 0 && isHome() && selectTab(pendingTab)) pendingTab = -1;
         hideComposers();
         refocus();
@@ -470,8 +658,7 @@ if (isTop && webview && /(^|\.)(x|twitter)\.com$/.test(location.hostname)) (func
 
     function handle(action, repeat) {
         if (!on) {
-            // On the console's keyboard B deletes a letter: it goes back only away from text boxes.
-            if (action === 'back' && !isTyping()) back();
+            handleForm(action);
             return;
         }
         if (viewer) {
@@ -501,16 +688,25 @@ if (isTop && webview && /(^|\.)(x|twitter)\.com$/.test(location.hostname)) (func
         if (msg && msg.type === 'input') handle(msg.action, msg.repeat);
     });
 
-    /* While the layer is on the controller's messages are the only input. On the console the
-       browser also makes key events and a mouse pointer of the controller, which would move the
-       page a second time (see remote.js): they're dropped. Elsewhere the keyboard stands in for the
-       controller, and X's own shortcuts (L likes a post) never see a key. */
+    /* The controller's messages are the input. On the console the browser also makes key events
+       and a mouse pointer of the controller, which would move the page a second time (see
+       remote.js), so every key is dropped, except in a text box being typed in: there only the
+       controller's own (gamepad key codes 195-218) are, and what's typed on the console's keyboard
+       gets through. X's own shortcuts (L likes a post, U mutes) never see a key. Off the console
+       the keyboard stands in for the controller. */
     ['keydown', 'keyup', 'keypress'].forEach(function (type) {
         window.addEventListener(type, function (e) {
-            if (!on || !e.isTrusted) return;
+            if (!e.isTrusted) return;
+            var action = KEY_ACTION[e.key];
+            if (!on && isTyping() && !(e.keyCode >= 195 && e.keyCode <= 218) && !(action === 'back' && !config.xbox)) {
+                // Typing in a text box: the keys are the box's.
+                return;
+            }
             e.preventDefault();
             e.stopImmediatePropagation();
-            if (type === 'keydown' && !config.xbox && KEY_ACTION[e.key]) handle(KEY_ACTION[e.key], e.repeat);
+            if (type !== 'keydown' || config.xbox || !action) return;
+            if (on) handle(action, e.repeat);
+            else handleForm(action);
         }, true);
     });
 
@@ -518,7 +714,7 @@ if (isTop && webview && /(^|\.)(x|twitter)\.com$/.test(location.hostname)) (func
         ['pointerdown', 'pointerup', 'pointermove', 'pointerover', 'mousedown', 'mouseup', 'mousemove',
          'mouseover', 'click', 'dblclick', 'auxclick', 'contextmenu', 'wheel', 'mousewheel'].forEach(function (type) {
             window.addEventListener(type, function (e) {
-                if (!on || !e.isTrusted) return;
+                if (!e.isTrusted) return;
                 e.preventDefault();
                 e.stopImmediatePropagation();
             }, { capture: true, passive: false });

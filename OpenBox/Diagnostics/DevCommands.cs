@@ -33,6 +33,7 @@ namespace OpenBox.Diagnostics
     ///   press &lt;action&gt;... controller presses in a web app, 0.8 s apart: up, down, left, right,
     ///                  select (A), back (B), x, y, lb, rb, lt, rt, menu
     ///   script &lt;js&gt;    run JavaScript in a web app's page and log what it returns
+    ///   hidekeyboard   close the console's keyboard, as its B button would
     /// </summary>
     internal static class DevCommands
     {
@@ -148,6 +149,10 @@ namespace OpenBox.Diagnostics
                     case "script":
                         var scripted = App.CurrentPage as WebAppPage;
                         Log.Write(scripted == null ? "No web app is open" : "Script: " + await scripted.RunScriptAsync(id));
+                        break;
+                    case "hidekeyboard":
+                        var typing = App.CurrentPage as WebAppPage;
+                        Log.Write(typing == null ? "No web app is open" : "Keyboard hidden: " + typing.HideKeyboard());
                         break;
                     case "press":
                         foreach (var action in id.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))

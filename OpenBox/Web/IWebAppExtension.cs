@@ -16,8 +16,7 @@ namespace OpenBox.Web
 
         /// <summary>
         /// True if the page script reads the controller's input messages itself (X's does), so
-        /// remote.js doesn't turn them into TV remote keys. It can then ask for the console's mouse
-        /// pointer on pages it can't drive: see the app.pointer message in WebAppPage.
+        /// remote.js doesn't turn them into TV remote keys.
         /// </summary>
         bool HandlesInput { get; }
 

@@ -1,5 +1,5 @@
 /* tv.css: x.com, laid out for a TV. tv.js adds it to every page and sets html[data-openbox-tv]
- * while the D-pad drives the page (not on sign-in), so nothing here applies then.
+ * on timelines; sign-in only gets the focus ring ([data-openbox-ring]) and no pointer.
  *
  * Only X's data-testid hooks, ARIA roles and plain elements are used: its class names are hashed
  * and change with every release.
@@ -17,8 +17,8 @@ html[data-openbox-tv] [data-testid="cellInnerDiv"] > *,
 }
 
 /* No pointer: nothing on the page shows hover states. */
-html[data-openbox-tv][data-openbox-xbox],
-html[data-openbox-tv][data-openbox-xbox] * {
+html[data-openbox-xbox],
+html[data-openbox-xbox] * {
     cursor: none !important;
     pointer-events: none !important;
 }
@@ -63,6 +63,13 @@ html[data-openbox-tv] [data-testid="primaryColumn"] {
     margin: 0 auto !important;
     padding-top: calc(64px * var(--openbox-zoom, 1)) !important;
     border: none !important;
+}
+
+/* The focused field or button on a form (sign-in). */
+[data-openbox-ring] {
+    outline: 4px solid #1d9bf0 !important;
+    outline-offset: 3px !important;
+    box-shadow: 0 0 18px rgba(29, 155, 240, 0.6) !important;
 }
 
 /* The focused post. */
