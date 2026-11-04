@@ -19,6 +19,9 @@ namespace OpenBox.Apps
         private const string OrderKey = "homeOrder";
         private static Task<List<AppEntry>> _loading;
         private static List<AppEntry> _installed;
+        // Entries this version can't read (written by a newer openbox, say): kept as they are and
+        // saved back, so going back to an older build doesn't lose tiles.
+        private static readonly List<JsonObject> Unreadable = new List<JsonObject>();
 
         public static async Task<IReadOnlyList<AppEntry>> GetInstalledAsync()
         {
@@ -126,13 +129,24 @@ namespace OpenBox.Apps
                 JsonArray array;
                 if (!JsonArray.TryParse(await FileIO.ReadTextAsync(file), out array))
                 {
-                    Log.Write("apps.json isn't valid; starting with no store apps");
+                    // Kept aside rather than overwritten by the next save.
+                    await file.CopyAsync(ApplicationData.Current.LocalFolder, "apps.invalid.json", NameCollisionOption.ReplaceExisting);
+                    Log.Write("apps.json isn't valid (kept as apps.invalid.json); starting with no store apps");
                     return result;
                 }
                 foreach (var value in array)
                 {
-                    var app = value.ValueType == JsonValueType.Object ? AppEntry.FromJson(value.GetObject()) : null;
-                    if (app != null && !BuiltInApps.IsReservedId(app.Id))
+                    if (value.ValueType != JsonValueType.Object)
+                    {
+                        continue;
+                    }
+                    var app = AppEntry.FromJson(value.GetObject());
+                    if (app == null)
+                    {
+                        Log.Write("Keeping an apps.json entry this version can't read");
+                        Unreadable.Add(value.GetObject());
+                    }
+                    else if (!BuiltInApps.IsReservedId(app.Id))
                     {
                         result.Add(app);
                     }
@@ -151,6 +165,10 @@ namespace OpenBox.Apps
             foreach (var app in _installed)
             {
                 array.Add(app.ToJson());
+            }
+            foreach (var entry in Unreadable)
+            {
+                array.Add(entry);
             }
             try
             {

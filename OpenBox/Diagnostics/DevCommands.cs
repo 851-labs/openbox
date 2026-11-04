@@ -8,6 +8,7 @@ using OpenBox.Apps;
 using OpenBox.Packages;
 using OpenBox.Store;
 using OpenBox.Web;
+using Windows.Management.Deployment;
 using Windows.Security.Credentials;
 using Windows.Security.Cryptography.Certificates;
 using Windows.Storage;
@@ -26,6 +27,7 @@ namespace OpenBox.Diagnostics
     ///   install &lt;id&gt;   install a store app, as A on it in the Store
     ///   uninstall &lt;id&gt; uninstall a homescreen app and its package, without asking
     ///   home           go back to the homescreen
+    ///   remove-package &lt;familyName&gt;  uninstall a package openbox installed, tile or not
     ///   probe &lt;url&gt; [user] [password]  GET an address, ignoring certificate errors (the
     ///                  console's own Device Portal, say); the credentials aren't logged
     ///   press &lt;action&gt;... controller presses in a web app, 0.8 s apart: up, down, left, right,
@@ -106,6 +108,18 @@ namespace OpenBox.Diagnostics
                         break;
                     case "home":
                         App.GoHome();
+                        break;
+                    case "remove-package":
+                        var installed = new PackageManager().FindPackagesForUser(string.Empty, id).ToList();
+                        foreach (var package in installed)
+                        {
+                            var result = await new PackageManager().RemovePackageAsync(package.Id.FullName);
+                            Log.Write("Removed " + package.Id.FullName + (result.ExtendedErrorCode != null ? ": " + result.ErrorText : string.Empty));
+                        }
+                        if (installed.Count == 0)
+                        {
+                            Log.Write("No package " + id);
+                        }
                         break;
                     case "probe":
                         var args = id.Split(' ');
