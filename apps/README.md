@@ -31,19 +31,19 @@ Every app gets openbox's ad blocker; there's nothing to set.
 
 ## Package apps
 
-An app can also be an app package of its own (an `.appx` or `.msix`) instead of a web page. Installing it from the Store downloads the package, installs it on the console, and adds a tile that opens it. Instead of `url`, `input` and `userAgent` it has a `package`:
+An app can also be an app package of its own (an `.appx` or `.msix`) instead of a web page. Installing it from the Store downloads the package, checks it, installs it on the console with PackageManager, and adds a tile that opens it. Instead of `url`, `input` and `userAgent` it has a `package`:
 
 ```json
 {
-  "name": "Minecraft Java",
-  "description": "Minecraft: Java Edition, through Bandit Launcher. Needs a Java Edition account.",
-  "icon": "icons/minecraft-java.png",
-  "color": "#107C10",
-  "credit": "Bandit Launcher by veroxsity / BanditVault: launcher.banditvault.co.uk",
+  "name": "My App",
+  "description": "One line about it.",
+  "icon": "icons/my-app.png",
+  "color": "#1A2B3C",
+  "credit": "My App by Someone: example.com",
   "package": {
-    "url": "https://github.com/veroxsity/JavaUWP/releases/download/nightly/BanditLauncher-nightly.appx",
-    "sha256Url": "https://github.com/veroxsity/JavaUWP/releases/download/nightly/BanditLauncher-nightly.sha256",
-    "familyName": "BanditVault.Launcher_r9d4qta1rpjdr",
+    "url": "https://example.com/releases/MyApp.appx",
+    "sha256Url": "https://example.com/releases/MyApp.sha256",
+    "familyName": "Someone.MyApp_abcdefghjkmnp",
     "appId": "App"
   }
 }
@@ -54,6 +54,8 @@ An app can also be an app package of its own (an `.appx` or `.msix`) instead of 
 - `package.familyName`: the installed package's family name, from its manifest's Identity (`Name_PublisherId`).
 - `package.appId` (optional, `App` by default): the Application Id the tile opens.
 - `credit` (optional, any app): who made it, with a link, up to 100 characters. It's shown in the Store, so use it when an app's terms ask for credit.
+
+**Not usable on Xbox yet.** On the console a package installed this way is registered only for openbox's own account (`UserMgr0`), while the console launches apps as `DefaultAccount`, so it won't open. Registering it for every account (`ProvisionPackageForAllUsersAsync`) is refused, and openbox can't reach the console's own Device Portal, which does register apps for both. A package installed through Device Portal from another device opens from its tile. Until there's a way around this, the Store has no package apps.
 
 The package's dependencies must already be on the console. Apps built like openbox need `Microsoft.VCLibs.140.00`, which openbox itself brings.
 

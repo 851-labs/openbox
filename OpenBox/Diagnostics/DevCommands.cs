@@ -22,7 +22,7 @@ namespace OpenBox.Diagnostics
     ///
     ///   open &lt;id&gt;      open a homescreen app, as A on its tile
     ///   install &lt;id&gt;   install a store app, as A on it in the Store
-    ///   uninstall &lt;id&gt; uninstall a homescreen app, as Uninstall in its menu (asks first)
+    ///   uninstall &lt;id&gt; uninstall a homescreen app and its package, without asking
     ///   home           go back to the homescreen
     ///   probe &lt;url&gt; [user] [password]  GET an address, ignoring certificate errors (the
     ///                  console's own Device Portal, say); the credentials aren't logged
@@ -92,7 +92,12 @@ namespace OpenBox.Diagnostics
                         }
                         break;
                     case "uninstall":
-                        await AppActions.UninstallAsync((await AppLibrary.GetHomeAppsAsync()).First(app => app.Id == id), true);
+                        var homeApp = (await AppLibrary.GetHomeAppsAsync()).First(app => app.Id == id);
+                        if (homeApp.IsPackage)
+                        {
+                            await PackageApps.UninstallAsync(homeApp);
+                        }
+                        await AppLibrary.UninstallAsync(homeApp.Id);
                         break;
                     case "home":
                         App.GoHome();

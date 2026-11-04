@@ -9,8 +9,7 @@ A simple launcher for Xbox consoles in Developer Mode. It boots to a homescreen 
 
 ## Apps
 - **YouTube** is YouTube's own TV app (youtube.com/tv), with its ads removed. That part comes from [TubeBox](https://github.com/sharktie/tubebox-uwp).
-- **Minecraft: Java Edition** installs from the Store, through [Bandit Launcher](https://launcher.banditvault.co.uk/) by veroxsity / BanditVault. openbox downloads it from their official release. Bandit targets Xbox Series X|S.
-- **Store apps** are web apps that open full screen, or app packages that openbox installs on the console. Each one is a JSON file in [`apps/`](apps/); see [apps/README.md](apps/README.md) to add one. Twitch opens Twitch's own TV app.
+- **Store apps** are web apps that open full screen. Store entries can also be app packages that openbox installs on the console, but the console won't launch those yet (see [apps/README.md](apps/README.md#package-apps)). Each one is a JSON file in [`apps/`](apps/); see [apps/README.md](apps/README.md) to add one. Twitch opens Twitch's own TV app.
 - **Ad blocking** in every web app, the way uBlock Origin does it, with its default lists (uBlock filters, EasyList, EasyPrivacy, Peter Lowe's list): requests to ad and tracking servers are blocked, and leftover ad slots on the page are hidden. The lists update by themselves daily.
 
 ## Install on Xbox
