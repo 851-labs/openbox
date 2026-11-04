@@ -93,6 +93,30 @@ namespace OpenBox.Packages
             return "The console wouldn't open it.";
         }
 
+        /// <summary>
+        /// Makes an installed package the console's, not only openbox's. openbox runs as one of
+        /// the console's accounts and AddPackageAsync installs for that account alone, but the
+        /// console launches apps as another (DefaultAccount), as Device Portal installs them for
+        /// both. Provisioning registers the package for every account.
+        /// </summary>
+        public static async Task ProvisionAsync(AppEntry app)
+        {
+            try
+            {
+                var result = await new PackageManager().ProvisionPackageForAllUsersAsync(app.Package.FamilyName);
+                if (result.ExtendedErrorCode != null)
+                {
+                    throw new Exception(result.ErrorText, result.ExtendedErrorCode);
+                }
+                Log.Write("Provisioned " + app.Package.FamilyName + " for every account");
+            }
+            catch (Exception ex)
+            {
+                // It may still open for openbox's own account (see LaunchAsync).
+                Log.Error("Provisioning " + app.Package.FamilyName + " failed", ex);
+            }
+        }
+
         /// <summary>Removes the app's package from the console, with its data.</summary>
         public static async Task UninstallAsync(AppEntry app)
         {
@@ -102,10 +126,30 @@ namespace OpenBox.Packages
                 return;
             }
             Log.Write("Uninstalling " + package.Id.FullName);
-            var result = await new PackageManager().RemovePackageAsync(package.Id.FullName);
+            var manager = new PackageManager();
+            DeploymentResult result;
+            try
+            {
+                // From every account it was registered for (see ProvisionAsync).
+                result = await manager.RemovePackageAsync(package.Id.FullName, RemovalOptions.RemoveForAllUsers);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Removing for every account failed; removing for openbox's", ex);
+                result = await manager.RemovePackageAsync(package.Id.FullName);
+            }
             if (result.ExtendedErrorCode != null)
             {
                 throw new Exception(result.ErrorText, result.ExtendedErrorCode);
+            }
+            try
+            {
+                // Provisioned packages would come back for new accounts.
+                await manager.DeprovisionPackageForAllUsersAsync(app.Package.FamilyName);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Deprovisioning " + app.Package.FamilyName + " failed", ex);
             }
         }
 
@@ -149,6 +193,7 @@ namespace OpenBox.Packages
                 {
                     // Installed some other way (Device Portal, say): it only needs its tile.
                     Log.Write(_app.Id + " is already on the console");
+                    await PackageApps.ProvisionAsync(_app);
                 }
                 else
                 {
@@ -247,6 +292,7 @@ namespace OpenBox.Packages
                 throw new Exception(result.ErrorText, result.ExtendedErrorCode);
             }
             Log.Write("Installed " + _app.Package.FamilyName);
+            await PackageApps.ProvisionAsync(_app);
         }
 
         private void Set(string status)
