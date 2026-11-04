@@ -1,4 +1,5 @@
 using OpenBox.Store;
+using OpenBox.X;
 using OpenBox.YouTube;
 using Windows.UI;
 
@@ -19,11 +20,15 @@ namespace OpenBox.Apps
             "youtube", "YouTube", "ms-appx:///Assets/Apps/youtube.png", Color.FromArgb(255, 255, 0, 51),
             YouTubeExtension.Url, true, () => new YouTubeExtension());
 
+        public static readonly AppEntry X = AppEntry.BuiltInWeb(
+            "x", "X", "ms-appx:///Assets/Apps/x.png", Color.FromArgb(255, 0, 0, 0),
+            XExtension.Url, true, () => new XExtension());
+
         public static readonly AppEntry Store = AppEntry.Native(
             "store", "Store", "ms-appx:///Assets/Apps/store.png", Color.FromArgb(255, 42, 45, 58), typeof(StorePage));
 
         /// <summary>The built-in apps before the installed ones, in homescreen order.</summary>
-        public static readonly AppEntry[] Core = { YouTube };
+        public static readonly AppEntry[] Core = { YouTube, X };
 
         /// <summary>Store apps can't use these ids (the store index build refuses them too).</summary>
         public static bool IsReservedId(string id)

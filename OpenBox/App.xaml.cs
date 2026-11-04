@@ -115,6 +115,12 @@ namespace OpenBox
             }
         }
 
+        /// <summary>What's on screen: the homescreen, an app's page, the Store.</summary>
+        internal static object CurrentPage
+        {
+            get { return _frame?.Content; }
+        }
+
         /// <summary>Back to the homescreen, from wherever.</summary>
         internal static void GoHome()
         {

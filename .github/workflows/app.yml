@@ -26,7 +26,7 @@ jobs:
         run: |
           # The scripts added to web pages have no build step; make sure each at least parses.
           # From stdin in strict (module) mode, since `node --check file.js` can pass a broken file.
-          for file in OpenBox/Web/Inject/*.js OpenBox/YouTube/Inject/*.js OpenBox/AdBlock/Inject/*.js; do
+          for file in OpenBox/Web/Inject/*.js OpenBox/YouTube/Inject/*.js OpenBox/AdBlock/Inject/*.js OpenBox/X/Inject/*.js; do
             node --input-type=module --check < "$file" || { echo "::error file=$file::Syntax error"; exit 1; }
           done
           node -e 'JSON.parse(require("fs").readFileSync("OpenBox/YouTube/Inject/filters.json", "utf8"))'
@@ -98,7 +98,8 @@ jobs:
           try { $entries = $zip.Entries | ForEach-Object { $_.FullName } } finally { $zip.Dispose() }
           $required = @('Web/Inject/prelude.js', 'Web/Inject/remote.js', 'YouTube/Inject/adblock.js',
             'YouTube/Inject/upgrade.js', 'YouTube/Inject/filters.json', 'Assets/Apps/youtube.png',
-            'AdBlock/Inject/cosmetic.js', 'AdBlock/adblock.json')
+            'AdBlock/Inject/cosmetic.js', 'AdBlock/adblock.json', 'X/Inject/tv.js', 'X/Inject/tv.css',
+            'Assets/Apps/x.png')
           $missing = $required | Where-Object { $entries -notcontains $_ }
           if ($missing) { throw "Missing from package: $($missing -join ', ')" }
           New-Item -ItemType Directory release\Dependencies -Force | Out-Null

@@ -3,9 +3,11 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using OpenBox.Apps;
 using OpenBox.Packages;
 using OpenBox.Store;
+using OpenBox.Web;
 using Windows.Security.Credentials;
 using Windows.Security.Cryptography.Certificates;
 using Windows.Storage;
@@ -26,6 +28,8 @@ namespace OpenBox.Diagnostics
     ///   home           go back to the homescreen
     ///   probe &lt;url&gt; [user] [password]  GET an address, ignoring certificate errors (the
     ///                  console's own Device Portal, say); the credentials aren't logged
+    ///   press &lt;action&gt;... controller presses in a web app, 0.8 s apart: up, down, left, right,
+    ///                  select (A), back (B), x, y, lb, rb, lt, rt, menu
     /// </summary>
     internal static class DevCommands
     {
@@ -124,6 +128,19 @@ namespace OpenBox.Diagnostics
                             {
                                 Log.Write(string.Format("probe {0}: 0x{1:X8} {2}", args[0], ex.HResult, ex.Message.Split('\r', '\n')[0]));
                             }
+                        }
+                        break;
+                    case "press":
+                        foreach (var action in id.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))
+                        {
+                            var page = App.CurrentPage as WebAppPage;
+                            if (page == null)
+                            {
+                                Log.Write("No web app is open");
+                                break;
+                            }
+                            page.Press(action);
+                            await Task.Delay(800);
                         }
                         break;
                     default:

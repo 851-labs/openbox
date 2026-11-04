@@ -26,6 +26,9 @@ namespace OpenBox.AdBlock
         private static readonly TimeSpan CheckInterval = TimeSpan.FromHours(24);
         private static readonly Regex VersionPattern = new Regex("^\\{\"version\":(\\d+)");
         private static readonly string[] SecondLevelLabels = { "co", "com", "net", "org", "gov", "edu", "ac", "or", "ne", "go", "gob", "mil" };
+        // Sites left exactly as they are, ads included: nothing blocked on their pages, nothing
+        // hidden. X keeps its promoted posts (the built-in X app has no blocker anyway).
+        private static readonly HashSet<string> Untouched = new HashSet<string> { "x.com", "twitter.com" };
 
         private static Task<AdFilters> _current;
 
@@ -200,6 +203,10 @@ namespace OpenBox.AdBlock
         public bool ShouldBlock(Uri request, string pageHost)
         {
             var host = request.Host;
+            if (pageHost != null && Matches(Untouched, pageHost))
+            {
+                return false;
+            }
             // The app's own site is never blocked: these are host filters, and blocking a host the
             // page itself is on would break the app rather than its ads.
             if (pageHost != null && BaseDomain(host) == BaseDomain(pageHost))
@@ -244,7 +251,7 @@ namespace OpenBox.AdBlock
         /// <summary>The selectors to hide on a page at <paramref name="host"/>, a line each.</summary>
         public string SelectorsFor(string host)
         {
-            if (Matches(_noCosmetic, host))
+            if (Matches(_noCosmetic, host) || Matches(Untouched, host))
             {
                 return string.Empty;
             }

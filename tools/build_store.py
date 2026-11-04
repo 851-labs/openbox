@@ -23,7 +23,7 @@ BASE_URL = os.environ.get("STORE_BASE_URL", "https://raw.githubusercontent.com/8
 ID = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 COLOR = re.compile(r"^#[0-9A-Fa-f]{6}$")
 # Built into openbox; a store app can't take their place.
-RESERVED = {"youtube", "store", "airplay", "openbox"}
+RESERVED = {"youtube", "x", "store", "airplay", "openbox"}
 # Every app has these, and either a web app's url or a package app's package.
 REQUIRED = {"name", "description", "icon", "color"}
 WEB_FIELDS = {"url", "input", "userAgent"}

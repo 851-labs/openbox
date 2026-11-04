@@ -1,6 +1,6 @@
 # openbox
 
-A simple launcher for Xbox consoles in Developer Mode. It boots to a homescreen of apps you navigate with the controller, comes with YouTube built in (AirPlay is next), and has a small app store where apps are added by pull request.
+A simple launcher for Xbox consoles in Developer Mode. It boots to a homescreen of apps you navigate with the controller, comes with YouTube and X built in (AirPlay is next), and has a small app store where apps are added by pull request.
 
 ## Using it
 - **Homescreen:** move between tiles with the D-pad or left stick, press **A** to open one. Press **X** on a tile for its options: **Move** picks it up so the D-pad moves it (A to put it down, B to put it back), and **Uninstall** removes a store app.
@@ -9,8 +9,9 @@ A simple launcher for Xbox consoles in Developer Mode. It boots to a homescreen 
 
 ## Apps
 - **YouTube** is YouTube's own TV app (youtube.com/tv), with its ads removed. That part comes from [TubeBox](https://github.com/sharktie/tubebox-uwp).
+- **X** is x.com laid out for the TV, since X's own TV app is gone. Up and down move from post to post, **A** plays a post's video full screen (or opens a post without one), **X** plays and pauses, **LT**/**RT** skip back and forward, **LB**/**RB** switch between For you, Following and Videos, **Y** goes back to the top, and **B** closes the video, then goes back, then leaves X. Signing in is X's own page, with the console's pointer and keyboard. X's promoted posts are left as they are.
 - **Store apps** are web apps that open full screen. Store entries can also be app packages that openbox installs on the console, but the console won't launch those yet (see [apps/README.md](apps/README.md#package-apps)). Each one is a JSON file in [`apps/`](apps/); see [apps/README.md](apps/README.md) to add one. Twitch opens Twitch's own TV app.
-- **Ad blocking** in every web app, the way uBlock Origin does it, with its default lists (uBlock filters, EasyList, EasyPrivacy, Peter Lowe's list): requests to ad and tracking servers are blocked, and leftover ad slots on the page are hidden. The lists update by themselves daily.
+- **Ad blocking** in every web app (except X), the way uBlock Origin does it, with its default lists (uBlock filters, EasyList, EasyPrivacy, Peter Lowe's list): requests to ad and tracking servers are blocked, and leftover ad slots on the page are hidden. The lists update by themselves daily.
 
 ## Install on Xbox
 1. Turn on [Developer Mode](https://learn.microsoft.com/windows/uwp/xbox-apps/devkit-activation) and, in Dev Home, the Xbox Device Portal.
@@ -27,6 +28,7 @@ A C# UWP app with XAML (`OpenBox/`):
 - `Web/WebAppPage`: any web app, full screen in WebView2. The controller drives it as the console's mouse pointer, or as a TV remote for TV web apps (`Web/Inject/remote.js`).
 - `AdBlock/`: the ad blocker for web apps. `tools/build_adblock.py` compiles the filter lists into what it reads.
 - `YouTube/`: what YouTube adds to `WebAppPage`: a TV user agent and TubeBox's YouTube ad blocking, in place of the general one.
+- `X/`: what X adds: `Inject/tv.css` and `Inject/tv.js`, the TV layout and the D-pad focus on top of x.com.
 - `Store/`: the Store page, reading the index CI builds from `apps/`.
 - `Packages/`: installing package apps on the console with PackageManager, and launching them.
 - `Apps/BuiltInApps.cs`: the built-in apps. A built-in native app (AirPlay, next) is a XAML page registered there.
@@ -36,4 +38,4 @@ CI (`.github/workflows/`) builds a signed `.msix` on a Windows runner (`app.yml`
 ## License
 GPL-3.0. The ad blocker's filters are compiled at build time from uBlock Origin's lists (GPL-3.0), EasyList and EasyPrivacy (GPL-3.0 or CC BY-SA 3.0) and Peter Lowe's list, under their own licenses. Parts of openbox (the YouTube scripts in `OpenBox/YouTube/Inject`, the ad filter and controller code, and the build setup) come from [TubeBox](https://github.com/sharktie/tubebox-uwp) by sharktie, also GPL-3.0.
 
-openbox is not affiliated with Microsoft, YouTube or Google.
+openbox is not affiliated with Microsoft, YouTube, Google or X.

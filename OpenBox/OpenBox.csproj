@@ -83,6 +83,7 @@
     </Compile>
     <Compile Include="YouTube\FilterList.cs" />
     <Compile Include="YouTube\RequestBlocker.cs" />
+    <Compile Include="X\XExtension.cs" />
     <Compile Include="YouTube\YouTubeExtension.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -101,6 +102,8 @@
     <Content Include="AdBlock\*.json" />
     <Content Include="YouTube\Inject\*.js" />
     <Content Include="YouTube\Inject\filters.json" />
+    <Content Include="X\Inject\tv.js" />
+    <Content Include="X\Inject\tv.css" />
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">

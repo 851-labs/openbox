@@ -22,7 +22,8 @@ namespace OpenBox.Web
     /// (<see cref="AppEntry.RemoteInput"/>): as a TV remote, for web apps made for TVs (YouTube),
     /// or as the console's mouse pointer, as in a browser. B goes back within the app (a TV app
     /// gets it as its own back key, and goes home when it closes itself; a web page goes back a
-    /// page) and View goes home.
+    /// page) and View goes home. A TV app whose script reads the controller itself (X) can also ask
+    /// for the pointer for a while, for pages it can't drive (sign-in).
     /// </summary>
     public sealed partial class WebAppPage : Page, IBackHandler
     {
@@ -35,6 +36,7 @@ namespace OpenBox.Web
         private ControllerBridge _controller;
         private bool _loaded;
         private bool _closed;
+        private bool _pointer;
 
         public WebAppPage()
         {
@@ -56,9 +58,7 @@ namespace OpenBox.Web
             Splash.Background = _app.Background;
             SplashIcon.Source = _app.IconImage;
             // The console's mouse pointer for ordinary web pages, none for TV apps.
-            var pointer = _app.RemoteInput ? RequiresPointer.Never : RequiresPointer.WhenFocused;
-            RequiresPointer = pointer;
-            WebView.RequiresPointer = pointer;
+            SetPointer(!_app.RemoteInput);
             StartAsync();
         }
 
@@ -170,7 +170,7 @@ namespace OpenBox.Web
             {
                 script.Append(await _extension.GetPageScriptAsync()).Append('\n');
             }
-            if (_app.RemoteInput)
+            if (_app.RemoteInput && (_extension == null || !_extension.HandlesInput))
             {
                 script.Append(await ReadScriptAsync("remote.js")).Append('\n');
             }
@@ -201,19 +201,48 @@ namespace OpenBox.Web
             }
             else
             {
-                var payload = new JsonObject();
-                payload.SetNamedValue("type", JsonValue.CreateStringValue("input"));
-                payload.SetNamedValue("action", JsonValue.CreateStringValue(action));
-                payload.SetNamedValue("repeat", JsonValue.CreateBooleanValue(repeat));
-                try
-                {
-                    _core?.PostWebMessageAsJson(payload.Stringify());
-                }
-                catch (Exception ex)
-                {
-                    Log.Write("Sending input failed: " + ex.Message);
-                }
+                SendInput(action, repeat);
             }
+        }
+
+#if DEBUG
+        /// <summary>A controller press, from Diagnostics/DevCommands.</summary>
+        internal void Press(string action)
+        {
+            OnControllerAction(action, false);
+        }
+#endif
+
+        private async void SendInput(string action, bool repeat)
+        {
+            var payload = new JsonObject();
+            payload.SetNamedValue("type", JsonValue.CreateStringValue("input"));
+            payload.SetNamedValue("action", JsonValue.CreateStringValue(action));
+            payload.SetNamedValue("repeat", JsonValue.CreateBooleanValue(repeat));
+            try
+            {
+                if (_core != null && (action == "select" || action == "x"))
+                {
+                    // OK and play count as the user's own presses, as a key press would, so what
+                    // the page does with them may go full screen or play with sound (X's videos).
+                    await _core.CallDevToolsProtocolMethodAsync("Runtime.evaluate", "{\"expression\":\"0\",\"userGesture\":true}");
+                }
+                _core?.PostWebMessageAsJson(payload.Stringify());
+            }
+            catch (Exception ex)
+            {
+                Log.Write("Sending input failed: " + ex.Message);
+            }
+        }
+
+        // The console's mouse pointer, on or off. A TV app that reads the controller itself turns it
+        // on for the pages it can't drive (X's sign-in), and the console's keyboard with it.
+        private void SetPointer(bool on)
+        {
+            _pointer = on;
+            var pointer = on ? RequiresPointer.WhenFocused : RequiresPointer.Never;
+            RequiresPointer = pointer;
+            WebView.RequiresPointer = pointer;
         }
 
         private void OnWebMessageReceived(CoreWebView2 sender, CoreWebView2WebMessageReceivedEventArgs e)
@@ -237,17 +266,28 @@ namespace OpenBox.Web
                     Log.Write(_app.Id + " closed itself");
                     App.GoHome();
                     break;
+                case "app.pointer":
+                    var on = message.GetNamedValue("on", JsonValue.CreateNullValue());
+                    if (_app.RemoteInput && _extension != null && _extension.HandlesInput &&
+                        on.ValueType == JsonValueType.Boolean && on.GetBoolean() != _pointer)
+                    {
+                        Log.Write(_app.Id + (on.GetBoolean() ? " asked for the pointer" : " gave back the pointer"));
+                        SetPointer(on.GetBoolean());
+                        WebView.Focus(FocusState.Programmatic);
+                    }
+                    break;
             }
         }
 
         private void OnPreviewKeyDown(object sender, KeyRoutedEventArgs e)
         {
             // In a TV app ControllerBridge handles the controller. Stop XAML from also using its
-            // buttons to move focus out of the web page, except on the load error screen.
+            // buttons to move focus out of the web page, except on the load error screen and while
+            // the app has the pointer.
             var key = (int)e.Key;
             var isController = (key >= (int)VirtualKey.GamepadA && key <= (int)VirtualKey.GamepadRightThumbstickLeft) ||
                 (key >= (int)VirtualKey.NavigationView && key <= (int)VirtualKey.NavigationCancel);
-            if (isController && _app.RemoteInput && LoadErrorPanel.Visibility == Visibility.Collapsed)
+            if (isController && _app.RemoteInput && !_pointer && LoadErrorPanel.Visibility == Visibility.Collapsed)
             {
                 e.Handled = true;
                 if (!IsInWebView(FocusManager.GetFocusedElement() as DependencyObject))
