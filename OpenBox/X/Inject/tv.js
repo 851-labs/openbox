@@ -39,6 +39,7 @@ if (isTop && webview && /(^|\.)(x|twitter)\.com$/.test(location.hostname)) (func
 
     var on = false;
     var formEl = null;
+    var formTimer = 0;
     var focusId = null;
     var focusEl = null;
     var focusByUrl = {};
@@ -636,7 +637,14 @@ if (isTop && webview && /(^|\.)(x|twitter)\.com$/.test(location.hostname)) (func
         dressPage();
         if (!on) {
             if (document.body) refocusForm();
+            // X fades its dialogs in and out, which changes no elements: a new step can show
+            // without anything to tell the observer. Look again twice a second while on a form.
+            if (!formTimer) formTimer = setInterval(schedule, 500);
             return;
+        }
+        if (formTimer) {
+            clearInterval(formTimer);
+            formTimer = 0;
         }
         if (formEl) setFormFocus(null);
         if (pendingTab >= 0 && isHome() && selectTab(pendingTab)) pendingTab = -1;
