@@ -41,6 +41,7 @@ namespace OpenBox.AirPlay
         private AudioFrameInputNode _audioInput;
         private Task _audioStarting;
         private double _gain = 1;
+        private long _audioFrames;
 
         public MirrorPlayer()
         {
@@ -129,9 +130,10 @@ namespace OpenBox.AirPlay
                 _lastTicks = ticks;
                 var sample = MediaStreamSample.CreateFromBuffer(bytes.AsBuffer(), TimeSpan.FromTicks(ticks));
                 sample.KeyFrame = keyFrame;
-                if (++_frameCount == 1)
+                if (++_frameCount == 1 || _frameCount % 1800 == 0)
                 {
-                    Log.Write("AirPlay: first frame, " + length + " bytes");
+                    Log.Write(string.Format("AirPlay: frame {0}, {1} bytes, {2} waiting to be decoded",
+                        _frameCount, length, _frames.Count));
                 }
                 if (_waitingRequest != null)
                 {
@@ -287,12 +289,17 @@ namespace OpenBox.AirPlay
                 Buffer.MemoryCopy((void*)samples, destination, capacity, Math.Min(bytes, capacity));
             }
             input.AddFrame(frame);
+            if (++_audioFrames == 1)
+            {
+                Log.Write("AirPlay: first audio, " + frames + " samples");
+            }
         }
 
         /// <summary>The sender's volume slider, 0 to 1: AirPlay's -30 to 0 dB, and 0 for muted.</summary>
         public void SetVolume(float volume)
         {
             _gain = volume <= 0 ? 0 : Math.Pow(10, (volume * 30 - 30) / 20);
+            Log.Write(string.Format("AirPlay: volume {0:0.00} (gain {1:0.000})", volume, _gain));
             lock (_lock)
             {
                 if (_audioInput != null)
