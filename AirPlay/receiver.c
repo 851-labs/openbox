@@ -461,8 +461,11 @@ AIRPLAY_API int airplay_start(const char *name, const char *device_id, int width
     raop_set_port(raop, port);
     raop_set_dnssd(raop, dnssd);
 
-    if (dnssd_register_raop(dnssd, port) || dnssd_register_airplay(dnssd, port)) {
-        log_line(2, "Couldn't advertise the receiver");
+    int raop_error = dnssd_register_raop(dnssd, port);
+    int airplay_error = raop_error ? 0 : dnssd_register_airplay(dnssd, port);
+    if (raop_error || airplay_error) {
+        /* A negative socket error from mdnsd: UDP port 5353 couldn't be opened, say. */
+        log_line(2, "Couldn't advertise the receiver (%d)", raop_error ? raop_error : airplay_error);
         airplay_stop();
         return -5;
     }
