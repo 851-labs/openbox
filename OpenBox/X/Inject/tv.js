@@ -39,6 +39,7 @@ if (isTop && webview && /(^|\.)(x|twitter)\.com$/.test(location.hostname)) (func
 
     var on = false;
     var formEl = null;
+    var typingIn = null;
     var formTimer = 0;
     var focusId = null;
     var focusEl = null;
@@ -378,6 +379,7 @@ if (isTop && webview && /(^|\.)(x|twitter)\.com$/.test(location.hostname)) (func
         var old = document.querySelectorAll('[data-openbox-ring]');
         for (var i = 0; i < old.length; i++) old[i].removeAttribute('data-openbox-ring');
         formEl = el;
+        if (el !== typingIn) typingIn = null;
         if (!el) return;
         ringOf(el).setAttribute('data-openbox-ring', '');
         // Moving off a text box closes the keyboard's caret there; the box itself only takes the
@@ -397,9 +399,18 @@ if (isTop && webview && /(^|\.)(x|twitter)\.com$/.test(location.hostname)) (func
 
     function refocusForm() {
         var fields = formFields();
-        if (formEl && fields.indexOf(formEl) >= 0) {
+        // X disables a step's fields while it checks what was typed (Enter on the username): the
+        // focus stays on one that's still there, rather than jumping off the text box being typed in.
+        var scope = formDialog() || document.body;
+        if (formEl && (fields.indexOf(formEl) >= 0 || (formEl.isConnected && scope.contains(formEl) && shown(formEl)))) {
             var ring = ringOf(formEl);
             if (!ring.hasAttribute('data-openbox-ring')) ring.setAttribute('data-openbox-ring', '');
+            // Disabling it took the browser's focus off it too: back once it's enabled, so the
+            // keyboard, still up, goes on typing there.
+            var active = document.activeElement;
+            if (formEl === typingIn && !formEl.disabled && (!active || active === document.body)) {
+                formEl.focus({ preventScroll: true });
+            }
             return;
         }
         // A new step of the flow (the password after the username, say): its first field.
@@ -433,11 +444,15 @@ if (isTop && webview && /(^|\.)(x|twitter)\.com$/.test(location.hostname)) (func
         if (best) setFormFocus(best);
     }
 
-    /* A press of a button. X's sign-in pages answer pointer events rather than clicks on their
-       own div buttons (the arrow in the corner), and X's main app answers clicks: both get sent.
-       Native controls only need the click. */
+    /* A press of a button, as a mouse would press it. X's sign-in pages (jf-element) press many
+       of their buttons, <button>s included ("Continue with phone", the arrow in the corner), on
+       their own mousedown and mouseup listeners, and ignore clicks; X's main app and the rest of
+       the sign-in buttons answer clicks. A button that took the mouse press itself cancels its
+       mouseup, and then gets no click as well, which would press a submit button twice. Links and
+       form controls only need the click. */
     function tap(el) {
-        if (!/^(?:BUTTON|A|INPUT|SELECT|TEXTAREA|LABEL)$/.test(el.tagName)) {
+        var pressed = false;
+        if (!/^(?:A|INPUT|SELECT|TEXTAREA|LABEL)$/.test(el.tagName)) {
             var rect = el.getBoundingClientRect();
             var init = {
                 bubbles: true, cancelable: true, composed: true, view: window, button: 0, buttons: 1,
@@ -448,9 +463,9 @@ if (isTop && webview && /(^|\.)(x|twitter)\.com$/.test(location.hostname)) (func
             el.dispatchEvent(new MouseEvent('mousedown', init));
             init.buttons = 0;
             el.dispatchEvent(new PointerEvent('pointerup', init));
-            el.dispatchEvent(new MouseEvent('mouseup', init));
+            pressed = !el.dispatchEvent(new MouseEvent('mouseup', init));
         }
-        el.click();
+        if (!pressed && el.isConnected) el.click();
     }
 
     function pressField() {
@@ -459,6 +474,7 @@ if (isTop && webview && /(^|\.)(x|twitter)\.com$/.test(location.hostname)) (func
         if (isText(el)) {
             // Focus again even if it already has it: that's what brings the console's keyboard up.
             if (document.activeElement === el) el.blur();
+            typingIn = el;
             el.focus();
             el.click();
             if (navigator.virtualKeyboard && navigator.virtualKeyboard.show) {
@@ -476,6 +492,7 @@ if (isTop && webview && /(^|\.)(x|twitter)\.com$/.test(location.hostname)) (func
        step of the flow, or out of it), then out of X from the page behind. */
     function formBack() {
         if (isTyping()) {
+            typingIn = null;
             document.activeElement.blur();
             return;
         }
@@ -700,8 +717,8 @@ if (isTop && webview && /(^|\.)(x|twitter)\.com$/.test(location.hostname)) (func
        and a mouse pointer of the controller, which would move the page a second time (see
        remote.js), so every key is dropped, except in a text box being typed in: there only the
        controller's own (gamepad key codes 195-218) are, and what's typed on the console's keyboard
-       gets through. X's own shortcuts (L likes a post, U mutes) never see a key. Off the console
-       the keyboard stands in for the controller. */
+       gets through (WebAppPage hands it to the page). X's own shortcuts (L likes a post, U mutes)
+       never see a key. Off the console the keyboard stands in for the controller. */
     ['keydown', 'keyup', 'keypress'].forEach(function (type) {
         window.addEventListener(type, function (e) {
             if (!e.isTrusted) return;
@@ -718,11 +735,13 @@ if (isTop && webview && /(^|\.)(x|twitter)\.com$/.test(location.hostname)) (func
         }, true);
     });
 
+    /* The pointer's events are dropped too. A click no pointer made (detail 0) is the browser's own:
+       Enter in a text box submits its form by clicking the form's submit button. */
     if (config.xbox) {
         ['pointerdown', 'pointerup', 'pointermove', 'pointerover', 'mousedown', 'mouseup', 'mousemove',
          'mouseover', 'click', 'dblclick', 'auxclick', 'contextmenu', 'wheel', 'mousewheel'].forEach(function (type) {
             window.addEventListener(type, function (e) {
-                if (!e.isTrusted) return;
+                if (!e.isTrusted || (type === 'click' && e.detail === 0)) return;
                 e.preventDefault();
                 e.stopImmediatePropagation();
             }, { capture: true, passive: false });
