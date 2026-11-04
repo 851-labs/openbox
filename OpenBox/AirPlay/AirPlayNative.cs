@@ -25,7 +25,7 @@ namespace OpenBox.AirPlay
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void AudioFrameCallback(IntPtr samples, int frames, int channels, int rate, long time);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void VolumeCallback(float volume);
+        public delegate void VolumeCallback(float decibels);
 
         /// <summary>airplay_callbacks_t: function pointers, in its order.</summary>
         [StructLayout(LayoutKind.Sequential)]

@@ -306,11 +306,11 @@ namespace OpenBox.AirPlay
             }
         }
 
-        private static void OnVolume(float volume)
+        private static void OnVolume(float decibels)
         {
             try
             {
-                Player.SetVolume(volume);
+                Player.SetVolume(decibels);
             }
             catch (Exception ex)
             {

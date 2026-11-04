@@ -40,8 +40,8 @@ typedef struct {
     void (*video_stopped)(void);
     /* Decoded audio: interleaved 32-bit float samples. */
     void (*audio_frame)(const float *samples, int frames, int channels, int rate, int64_t time);
-    /* The sender's volume, 0 (muted) to 1. */
-    void (*volume)(float volume);
+    /* The sender's volume in dB: -30 (its quietest) to 0, or -144 for muted. */
+    void (*volume)(float decibels);
 } airplay_callbacks_t;
 
 /*

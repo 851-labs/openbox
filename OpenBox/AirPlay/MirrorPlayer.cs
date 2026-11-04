@@ -295,11 +295,11 @@ namespace OpenBox.AirPlay
             }
         }
 
-        /// <summary>The sender's volume slider, 0 to 1: AirPlay's -30 to 0 dB, and 0 for muted.</summary>
-        public void SetVolume(float volume)
+        /// <summary>The sender's volume: -30 dB (its quietest) to 0, or -144 for muted.</summary>
+        public void SetVolume(float decibels)
         {
-            _gain = volume <= 0 ? 0 : Math.Pow(10, (volume * 30 - 30) / 20);
-            Log.Write(string.Format("AirPlay: volume {0:0.00} (gain {1:0.000})", volume, _gain));
+            _gain = decibels <= -144 ? 0 : Math.Pow(10, Math.Max(-30, Math.Min(0, decibels)) / 20);
+            Log.Write(string.Format("AirPlay: volume {0:0.0} dB (gain {1:0.000})", decibels, _gain));
             lock (_lock)
             {
                 if (_audioInput != null)

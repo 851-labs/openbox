@@ -31,7 +31,7 @@ static void on_connected(const char *name, const char *model) { fprintf(stderr, 
 static void on_disconnected(void) { fprintf(stderr, "== disconnected\n"); }
 static void on_video_started(int width, int height) { fprintf(stderr, "== video %dx%d\n", width, height); }
 static void on_video_stopped(void) { fprintf(stderr, "== video stopped\n"); }
-static void on_volume(float volume) { fprintf(stderr, "== volume %.2f\n", volume); }
+static void on_volume(float decibels) { fprintf(stderr, "== volume %.1f dB\n", decibels); }
 
 static void on_video_frame(const uint8_t *data, int length, int64_t time, int is_h265) {
     (void) is_h265;

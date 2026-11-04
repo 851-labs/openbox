@@ -288,13 +288,11 @@ static double on_audio_set_client_volume(void *cls) {
     return 0.0;
 }
 
-/* AirPlay volume is -30 dB (quietest) to 0 dB, and -144 for muted. */
 static void on_audio_set_volume(void *cls, float volume) {
     (void) cls;
-    float level = volume <= -144.0f ? 0.0f : volume >= 0.0f ? 1.0f : volume < -30.0f ? 0.0f : (30.0f + volume) / 30.0f;
     log_line(1, "Volume %.1f dB", volume);
     if (callbacks.volume) {
-        callbacks.volume(level);
+        callbacks.volume(volume);
     }
 }
 
