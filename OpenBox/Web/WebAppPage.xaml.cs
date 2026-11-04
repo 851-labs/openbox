@@ -9,6 +9,7 @@ using Windows.Data.Json;
 using Windows.Storage;
 using Windows.System;
 using Windows.System.Profile;
+using Windows.UI.Core;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -37,6 +38,9 @@ namespace OpenBox.Web
         private bool _loaded;
         private bool _closed;
         private InputPane _inputPane;
+        private bool _keyboardUp;
+        private char _highSurrogate;
+        private Task _typing = Task.CompletedTask;
 
         public WebAppPage()
         {
@@ -66,6 +70,9 @@ namespace OpenBox.Web
             _inputPane = InputPane.GetForCurrentView();
             _inputPane.Showing += OnKeyboardShowing;
             _inputPane.Hiding += OnKeyboardHiding;
+            var window = Window.Current.CoreWindow;
+            window.KeyDown += OnWindowKeyDown;
+            window.CharacterReceived += OnWindowCharacterReceived;
             StartAsync();
         }
 
@@ -75,6 +82,9 @@ namespace OpenBox.Web
             _closed = true;
             _inputPane.Showing -= OnKeyboardShowing;
             _inputPane.Hiding -= OnKeyboardHiding;
+            var window = Window.Current.CoreWindow;
+            window.KeyDown -= OnWindowKeyDown;
+            window.CharacterReceived -= OnWindowCharacterReceived;
             _controller?.Dispose();
             _extension?.Dispose();
             _adBlocker?.Dispose();
@@ -259,6 +269,7 @@ namespace OpenBox.Web
         private void OnKeyboardShowing(InputPane sender, InputPaneVisibilityEventArgs e)
         {
             Log.Write("Keyboard up");
+            _keyboardUp = true;
             if (_controller != null)
             {
                 _controller.Paused = true;
@@ -270,9 +281,101 @@ namespace OpenBox.Web
         private void OnKeyboardHiding(InputPane sender, InputPaneVisibilityEventArgs e)
         {
             Log.Write("Keyboard down");
+            _keyboardUp = false;
+            _highSurrogate = '\0';
             if (_controller != null)
             {
                 _controller.Paused = LoadErrorPanel.Visibility == Visibility.Visible;
+            }
+        }
+
+        // What the console's keyboard types arrives at the app's window (CoreWindow), not at the
+        // browser's input window, and WinUI's WebView2 passes nothing on from there but Tab, so the
+        // page never sees it. While the keyboard is up its characters and editing keys are handed
+        // to the page here, as the browser's own (trusted) input, so X's fields take them as typing.
+        // Keys the browser's window gets itself never reach CoreWindow: nothing is typed twice.
+        private void OnWindowKeyDown(CoreWindow sender, KeyEventArgs e)
+        {
+            string key;
+            switch (e.VirtualKey)
+            {
+                case VirtualKey.Back: key = "Backspace"; break;
+                case VirtualKey.Enter: key = "Enter"; break;
+                case VirtualKey.Delete: key = "Delete"; break;
+                case VirtualKey.Left: key = "ArrowLeft"; break;
+                case VirtualKey.Right: key = "ArrowRight"; break;
+                case VirtualKey.Home: key = "Home"; break;
+                case VirtualKey.End: key = "End"; break;
+                default: return;
+            }
+            if (!IsTypingInPage())
+            {
+                return;
+            }
+            e.Handled = true;
+            var down = new JsonObject();
+            // Enter as a key with text, so it submits a form as a typed Enter would.
+            down.SetNamedValue("type", JsonValue.CreateStringValue(key == "Enter" ? "keyDown" : "rawKeyDown"));
+            down.SetNamedValue("key", JsonValue.CreateStringValue(key));
+            down.SetNamedValue("code", JsonValue.CreateStringValue(key));
+            down.SetNamedValue("windowsVirtualKeyCode", JsonValue.CreateNumberValue((int)e.VirtualKey));
+            down.SetNamedValue("nativeVirtualKeyCode", JsonValue.CreateNumberValue((int)e.VirtualKey));
+            if (key == "Enter")
+            {
+                down.SetNamedValue("text", JsonValue.CreateStringValue("\r"));
+            }
+            var up = JsonObject.Parse(down.Stringify());
+            up.SetNamedValue("type", JsonValue.CreateStringValue("keyUp"));
+            up.Remove("text");
+            TypeIntoPage("Input.dispatchKeyEvent", down.Stringify());
+            TypeIntoPage("Input.dispatchKeyEvent", up.Stringify());
+        }
+
+        private void OnWindowCharacterReceived(CoreWindow sender, CharacterReceivedEventArgs e)
+        {
+            // Control characters (Backspace, Enter) come as keys, above.
+            if (e.KeyCode < 32 || e.KeyCode == 127 || e.KeyCode > 0xFFFF || !IsTypingInPage())
+            {
+                return;
+            }
+            e.Handled = true;
+            var c = (char)e.KeyCode;
+            if (char.IsHighSurrogate(c))
+            {
+                _highSurrogate = c;
+                return;
+            }
+            var text = char.IsLowSurrogate(c) && _highSurrogate != '\0' ? new string(new[] { _highSurrogate, c }) : c.ToString();
+            _highSurrogate = '\0';
+            var insert = new JsonObject();
+            insert.SetNamedValue("text", JsonValue.CreateStringValue(text));
+            TypeIntoPage("Input.insertText", insert.Stringify());
+        }
+
+        private bool IsTypingInPage()
+        {
+            return _keyboardUp && _core != null && IsInWebView(FocusManager.GetFocusedElement() as DependencyObject);
+        }
+
+        // One after another, so fast typing arrives in order.
+        private void TypeIntoPage(string method, string parameters)
+        {
+            _typing = TypeAfterAsync(_typing, method, parameters);
+        }
+
+        private async Task TypeAfterAsync(Task previous, string method, string parameters)
+        {
+            await previous;
+            try
+            {
+                if (_core != null)
+                {
+                    await _core.CallDevToolsProtocolMethodAsync(method, parameters);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write("Typing into the page failed: " + ex.Message);
             }
         }
 
