@@ -8,7 +8,7 @@ A simple launcher for Xbox consoles in Developer Mode. It boots to a homescreen 
 - **Store:** the last tile. Press **A** on an app to add it to the homescreen, or on an added app to remove it. It's part of OpenBox, so **B** goes back home.
 
 ## Apps
-- **YouTube** is YouTube's own TV app (youtube.com/tv), with its ads removed. That part comes from [TubeBox](https://github.com/sharktie/tubebox-uwp).
+- **YouTube** is YouTube's own TV app (youtube.com/tv), with its ads removed. That part comes from [TubeBox](https://github.com/sharktie/tubebox-uwp). **X** on a video opens its options (Save to Watch later, Save to playlist, Not interested...), as in YouTube's console app, and plays and pauses in the player. Search types on the console's keyboard: it comes up when the search page opens, **Enter** searches, **B** closes it, and **A** on YouTube's own keyboard brings it back.
 - **AirPlay** makes the console an AirPlay receiver while OpenBox is running: on a Mac, iPhone or iPad on the same network, open Control Center, choose **Screen Mirroring**, then **OpenBox**. Its screen shows full screen on the TV, with its sound, wherever OpenBox is, and OpenBox goes back to what was on when the device stops mirroring. **View** goes home (the device stays connected; the AirPlay tile shows it again). The receiver is [UxPlay](https://github.com/FDH2/UxPlay)'s, ported to the console (see [AirPlay/README.md](AirPlay/README.md)).
 - **Store apps** are web apps that open full screen. Store entries can also be app packages that OpenBox installs on the console, but the console won't launch those yet (see [apps/README.md](apps/README.md#package-apps)). Each one is a JSON file in [`apps/`](apps/); see [apps/README.md](apps/README.md) to add one. Twitch opens Twitch's own TV app.
 - **Ad blocking** in every web app, the way uBlock Origin does it, with its default lists (uBlock filters, EasyList, EasyPrivacy, Peter Lowe's list): requests to ad and tracking servers are blocked, and leftover ad slots on the page are hidden. The lists update by themselves daily.
@@ -29,7 +29,7 @@ A C# UWP app with XAML (`OpenBox/`):
 - `Home/`: the homescreen.
 - `Web/WebAppPage`: any web app, full screen in WebView2. The controller drives it as the console's mouse pointer, or as a TV remote for TV web apps (`Web/Inject/remote.js`).
 - `AdBlock/`: the ad blocker for web apps. `tools/build_adblock.py` compiles the filter lists into what it reads.
-- `YouTube/`: what YouTube adds to `WebAppPage`: a TV user agent and TubeBox's YouTube ad blocking, in place of the general one.
+- `YouTube/`: what YouTube adds to `WebAppPage`: a TV user agent and TubeBox's YouTube ad blocking, in place of the general one, and `Inject/menu.js` (X opens a video's options) and `Inject/search.js` (search on the console's keyboard).
 - `AirPlay/`: the AirPlay page and player. The receiver itself is native, in [`AirPlay/`](AirPlay/) at the top of the repo: UxPlay's AirPlay server, built into `airplay.dll` with FFmpeg's audio decoders. The page plays the mirrored H.264 with the console's hardware decoder (a MediaStreamSource) and the sound with an AudioGraph.
 - `Store/`: the Store page, reading the index CI builds from `apps/`.
 - `Packages/`: installing package apps on the console with PackageManager, and launching them.

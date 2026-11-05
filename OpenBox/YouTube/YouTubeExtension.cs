@@ -10,7 +10,8 @@ namespace OpenBox.YouTube
     /// <summary>
     /// YouTube's own TV app (youtube.com/tv, the one smart TVs and consoles run), without the ads.
     /// From TubeBox (github.com/sharktie/tubebox-uwp): its user agent, ad filters, request blocking
-    /// and the page scripts in Inject/.
+    /// and the page scripts in Inject/. OpenBox's own scripts there make X open a video's options
+    /// (menu.js) and search type on the console's keyboard (search.js).
     /// </summary>
     internal sealed class YouTubeExtension : IWebAppExtension
     {
@@ -29,7 +30,7 @@ namespace OpenBox.YouTube
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64; Xbox; Xbox Series X) AppleWebKit/537.36 " +
             "(KHTML, like Gecko) Chrome/48.0.2564.82 Safari/537.36 Edge/20.02";
 
-        private static readonly string[] Scripts = { "adblock.js", "upgrade.js" };
+        private static readonly string[] Scripts = { "adblock.js", "upgrade.js", "menu.js", "search.js" };
 
         private FilterList _filters;
         private RequestBlocker _blocker;

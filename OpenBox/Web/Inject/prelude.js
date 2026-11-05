@@ -17,6 +17,12 @@ function post(type, payload) {
     try { webview.postMessage(msg); } catch (e) {}
 }
 
+/* An app's own script can take a controller action before remote.js turns it into a remote key
+   (YouTube's X, say): remote.js calls each of these with the input message and a press(action,
+   holdMs) that presses another remote key, held down for holdMs if given. One that returns true
+   has handled the action. */
+var remoteHooks = [];
+
 function log(message) {
     post('app.log', { message: String(message) });
 }

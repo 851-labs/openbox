@@ -274,6 +274,7 @@ namespace OpenBox.Web
             {
                 _controller.Paused = true;
             }
+            PostKeyboardVisible(true);
         }
 
         // The keyboard's own B (or its accept button) closes it. On the console InputPane.Visible
@@ -286,6 +287,31 @@ namespace OpenBox.Web
             if (_controller != null)
             {
                 _controller.Paused = LoadErrorPanel.Visibility == Visibility.Visible;
+            }
+            PostKeyboardVisible(false);
+        }
+
+        // The page hears when the console's keyboard comes and goes ({type: 'keyboard', visible}):
+        // YouTube's search (YouTube/Inject/search.js) takes its field down when B closes it. After
+        // the keys already typed, so an Enter that closed it is seen first.
+        private void PostKeyboardVisible(bool visible)
+        {
+            var message = new JsonObject();
+            message.SetNamedValue("type", JsonValue.CreateStringValue("keyboard"));
+            message.SetNamedValue("visible", JsonValue.CreateBooleanValue(visible));
+            _typing = PostAfterAsync(_typing, message.Stringify());
+        }
+
+        private async Task PostAfterAsync(Task previous, string json)
+        {
+            await previous;
+            try
+            {
+                _core?.PostWebMessageAsJson(json);
+            }
+            catch (Exception ex)
+            {
+                Log.Write("Posting to the page failed: " + ex.Message);
             }
         }
 
@@ -394,6 +420,13 @@ namespace OpenBox.Web
                     if (text.ValueType == JsonValueType.String)
                     {
                         Log.Write(_app.Id + ": " + text.GetString());
+                    }
+                    break;
+                case "app.keyboard.hide":
+                    // The page took down the text box being typed in (YouTube's search, on Enter).
+                    if (_keyboardUp)
+                    {
+                        _inputPane.TryHide();
                     }
                     break;
                 case "app.exit":

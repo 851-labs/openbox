@@ -7,7 +7,8 @@
  *   D-pad / left stick  arrows          A  OK (Enter)           B  back (Escape)
  *   X  play / pause                     Y  search
  *   LB / RB  previous / next track      LT / RT  rewind / fast-forward
- * View goes back to the homescreen in the app and never reaches the page.
+ * View goes back to the homescreen in the app and never reaches the page. An app's script can
+ * take an action first (remoteHooks, prelude.js): YouTube's X opens a video's options.
  */
 if (isTop && webview) (function () {
     /* Off the console (on a PC), a controller press and a keyboard key meaning the same within this
@@ -55,17 +56,38 @@ if (isTop && webview) (function () {
         target.dispatchEvent(ev);
     }
 
+    /* A remote key, let go of at once or after holdMs (a long press). */
+    function press(action, holdMs, repeat) {
+        var def = KEYS[action];
+        if (!def) return;
+        fire('keydown', def, repeat);
+        if (holdMs) setTimeout(function () { fire('keyup', def, false); }, holdMs);
+        else fire('keyup', def, false);
+    }
+
     webview.addEventListener('message', function (event) {
         var msg = event.data;
-        if (!msg || msg.type !== 'input') return;
-        var def = KEYS[msg.action];
-        if (!def) return;
+        if (!msg || msg.type !== 'input' || !KEYS[msg.action]) return;
         var now = performance.now();
         lastNative[msg.action] = now;
         if (now - (lastKey[msg.action] || -1e9) < DEDUPE_MS) return;
-        fire('keydown', def, msg.repeat);
-        fire('keyup', def, false);
+        for (var i = 0; i < remoteHooks.length; i++) {
+            try {
+                if (remoteHooks[i](msg, press)) return;
+            } catch (e) {
+                log('a remote hook failed: ' + e);
+            }
+        }
+        press(msg.action, 0, msg.repeat);
     });
+
+    /* A text box being typed in (YouTube's search, search.js) gets the keys the console's keyboard
+       types: WebAppPage hands them to the page as the browser's own. */
+    function isTyping(e) {
+        var el = e.target;
+        return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable) &&
+            el === document.activeElement;
+    }
 
     var droppedLogged = 0;
 
@@ -79,12 +101,13 @@ if (isTop && webview) (function () {
     ['keydown', 'keyup', 'keypress'].forEach(function (type) {
         window.addEventListener(type, function (e) {
             if (!e.isTrusted) return;
+            if (isTyping(e) && !(e.keyCode >= 195 && e.keyCode <= 218)) return;
             var action = KEY_ACTION[e.key];
             /* On the console the app's messages are the one source of controller input. The
                browser also turns the controller into key events of its own (its gamepad codes,
                195-218, arrow keys and others for the sticks, at its own moments), which would move
-               the page a second time; every key event from it is dropped. Elsewhere only the
-               gamepad codes are. */
+               the page a second time; every key event from it is dropped, except in a text box
+               being typed in. Elsewhere only the gamepad codes are. */
             if (config.xbox || (e.keyCode >= 195 && e.keyCode <= 218)) {
                 e.preventDefault();
                 e.stopImmediatePropagation();
