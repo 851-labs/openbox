@@ -5,20 +5,13 @@ using Microsoft.Web.WebView2.Core;
 namespace OpenBox.Web
 {
     /// <summary>
-    /// What a built-in web app adds to <see cref="WebAppPage"/>: YouTube's ad blocking, or X's
-    /// TV layout.
+    /// What a built-in web app adds to <see cref="WebAppPage"/>: YouTube's ad blocking, for one.
     /// Store apps run without one.
     /// </summary>
     internal interface IWebAppExtension : IDisposable
     {
         /// <summary>The user agent to use instead of the app's own, or null.</summary>
         string UserAgent { get; }
-
-        /// <summary>
-        /// True if the page script reads the controller's input messages itself (X's does), so
-        /// remote.js doesn't turn them into TV remote keys.
-        /// </summary>
-        bool HandlesInput { get; }
 
         /// <summary>Called once the web view is ready, before the first page loads.</summary>
         Task AttachAsync(CoreWebView2 core);

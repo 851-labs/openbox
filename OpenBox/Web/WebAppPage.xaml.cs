@@ -66,7 +66,7 @@ namespace OpenBox.Web
             RequiresPointer = pointer;
             WebView.RequiresPointer = pointer;
             // While the console's keyboard is up the controller is the keyboard's: a TV app doesn't
-            // also get its presses (X's sign-in would move off the text box being typed in).
+            // also get its presses (they'd move it off the text box being typed in).
             _inputPane = InputPane.GetForCurrentView();
             _inputPane.Showing += OnKeyboardShowing;
             _inputPane.Hiding += OnKeyboardHiding;
@@ -189,7 +189,7 @@ namespace OpenBox.Web
             {
                 script.Append(await _extension.GetPageScriptAsync()).Append('\n');
             }
-            if (_app.RemoteInput && (_extension == null || !_extension.HandlesInput))
+            if (_app.RemoteInput)
             {
                 script.Append(await ReadScriptAsync("remote.js")).Append('\n');
             }
@@ -255,7 +255,7 @@ namespace OpenBox.Web
                 if (_core != null && (action == "select" || action == "x"))
                 {
                     // OK and play count as the user's own presses, as a key press would, so what
-                    // the page does with them may go full screen or play with sound (X's videos).
+                    // the page does with them may go full screen or play with sound.
                     await _core.CallDevToolsProtocolMethodAsync("Runtime.evaluate", "{\"expression\":\"0\",\"userGesture\":true}");
                 }
                 _core?.PostWebMessageAsJson(payload.Stringify());
@@ -292,7 +292,7 @@ namespace OpenBox.Web
         // What the console's keyboard types arrives at the app's window (CoreWindow), not at the
         // browser's input window, and WinUI's WebView2 passes nothing on from there but Tab, so the
         // page never sees it. While the keyboard is up its characters and editing keys are handed
-        // to the page here, as the browser's own (trusted) input, so X's fields take them as typing.
+        // to the page here, as the browser's own (trusted) input, so its fields take them as typing.
         // Keys the browser's window gets itself never reach CoreWindow: nothing is typed twice.
         private void OnWindowKeyDown(CoreWindow sender, KeyEventArgs e)
         {

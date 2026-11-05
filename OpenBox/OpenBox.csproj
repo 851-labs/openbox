@@ -91,7 +91,6 @@
     </Compile>
     <Compile Include="YouTube\FilterList.cs" />
     <Compile Include="YouTube\RequestBlocker.cs" />
-    <Compile Include="X\XExtension.cs" />
     <Compile Include="YouTube\YouTubeExtension.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -110,8 +109,6 @@
     <Content Include="AdBlock\*.json" />
     <Content Include="YouTube\Inject\*.js" />
     <Content Include="YouTube\Inject\filters.json" />
-    <Content Include="X\Inject\tv.js" />
-    <Content Include="X\Inject\tv.css" />
     <!-- The AirPlay receiver, from AirPlay/: CI builds it and copies it here first. -->
     <Content Include="AirPlay\airplay.dll" Condition="Exists('AirPlay\airplay.dll')">
       <Link>airplay.dll</Link>

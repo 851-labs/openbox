@@ -1,6 +1,6 @@
 # OpenBox
 
-A simple launcher for Xbox consoles in Developer Mode. It boots to a homescreen of apps you navigate with the controller, comes with YouTube, X and AirPlay built in, and has a small app store where apps are added by pull request.
+A simple launcher for Xbox consoles in Developer Mode. It boots to a homescreen of apps you navigate with the controller, comes with YouTube and AirPlay built in, and has a small app store where apps are added by pull request.
 
 ## Using it
 - **Homescreen:** move between tiles with the D-pad or left stick, press **A** to open one. Press **X** on a tile for its options: **Move** picks it up so the D-pad moves it (A to put it down, B to put it back), and **Uninstall** removes a store app.
@@ -9,10 +9,11 @@ A simple launcher for Xbox consoles in Developer Mode. It boots to a homescreen 
 
 ## Apps
 - **YouTube** is YouTube's own TV app (youtube.com/tv), with its ads removed. That part comes from [TubeBox](https://github.com/sharktie/tubebox-uwp).
-- **X** is x.com laid out for the TV, since X's own TV app is gone. Up and down move from post to post, **A** plays a post's video full screen (or opens a post without one), **X** plays and pauses, **LT**/**RT** skip back and forward, **LB**/**RB** switch between For you, Following and Videos, **Y** goes back to the top, and **B** closes the video, then goes back, then leaves X. Signing in is X's own page, also on the D-pad: it moves a ring between the fields and buttons, **A** on a field brings up the console's keyboard and **A** on a button presses it, and **B** steps back. Use a username, email or phone: Google and Apple sign-in need a pop-up window OpenBox doesn't have. X's promoted posts are left as they are.
 - **AirPlay** makes the console an AirPlay receiver while OpenBox is running: on a Mac, iPhone or iPad on the same network, open Control Center, choose **Screen Mirroring**, then **OpenBox**. Its screen shows full screen on the TV, with its sound, wherever OpenBox is, and OpenBox goes back to what was on when the device stops mirroring. **View** goes home (the device stays connected; the AirPlay tile shows it again). The receiver is [UxPlay](https://github.com/FDH2/UxPlay)'s, ported to the console (see [AirPlay/README.md](AirPlay/README.md)).
 - **Store apps** are web apps that open full screen. Store entries can also be app packages that OpenBox installs on the console, but the console won't launch those yet (see [apps/README.md](apps/README.md#package-apps)). Each one is a JSON file in [`apps/`](apps/); see [apps/README.md](apps/README.md) to add one. Twitch opens Twitch's own TV app.
-- **Ad blocking** in every web app (except X), the way uBlock Origin does it, with its default lists (uBlock filters, EasyList, EasyPrivacy, Peter Lowe's list): requests to ad and tracking servers are blocked, and leftover ad slots on the page are hidden. The lists update by themselves daily.
+- **Ad blocking** in every web app, the way uBlock Origin does it, with its default lists (uBlock filters, EasyList, EasyPrivacy, Peter Lowe's list): requests to ad and tracking servers are blocked, and leftover ad slots on the page are hidden. The lists update by themselves daily.
+
+X (x.com laid out for the TV, with D-pad sign-in) was built in for a while and has been taken out for now: it was too complicated to keep working. It's in the git history (`OpenBox/X/`, last in commit `eaa666e`) if it comes back: reverting the commit that took it out restores it.
 
 ## Install on Xbox
 1. Turn on [Developer Mode](https://learn.microsoft.com/windows/uwp/xbox-apps/devkit-activation) and, in Dev Home, the Xbox Device Portal.
@@ -29,7 +30,6 @@ A C# UWP app with XAML (`OpenBox/`):
 - `Web/WebAppPage`: any web app, full screen in WebView2. The controller drives it as the console's mouse pointer, or as a TV remote for TV web apps (`Web/Inject/remote.js`).
 - `AdBlock/`: the ad blocker for web apps. `tools/build_adblock.py` compiles the filter lists into what it reads.
 - `YouTube/`: what YouTube adds to `WebAppPage`: a TV user agent and TubeBox's YouTube ad blocking, in place of the general one.
-- `X/`: what X adds: `Inject/tv.css` and `Inject/tv.js`, the TV layout and the D-pad focus on top of x.com.
 - `AirPlay/`: the AirPlay page and player. The receiver itself is native, in [`AirPlay/`](AirPlay/) at the top of the repo: UxPlay's AirPlay server, built into `airplay.dll` with FFmpeg's audio decoders. The page plays the mirrored H.264 with the console's hardware decoder (a MediaStreamSource) and the sound with an AudioGraph.
 - `Store/`: the Store page, reading the index CI builds from `apps/`.
 - `Packages/`: installing package apps on the console with PackageManager, and launching them.

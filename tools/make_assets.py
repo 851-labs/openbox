@@ -4,7 +4,6 @@ in OpenBox/Assets/Apps. Run it after changing a drawing here; the images are che
     python3 tools/make_assets.py
 """
 import os
-import re
 
 from PIL import Image, ImageDraw
 
@@ -75,58 +74,6 @@ def youtube_icon(path):
     finish(image, size, size, path)
 
 
-# X's mark, from the SVG on x.com (a 24x24 box): the outline of the wide stroke, then its hole.
-X_MARK = ("M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835"
-          "L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z")
-
-
-def path_polygons(d):
-    """The polygons of an SVG path made only of straight lines (M, L, H, V and z, either case)."""
-    tokens = re.findall(r"[MmLlHhVvZz]|-?\d*\.?\d+", d)
-    polygons, points = [], []
-    x = y = 0.0
-    command = None
-    i = 0
-    while i < len(tokens):
-        if tokens[i].isalpha():
-            command = tokens[i]
-            i += 1
-            if command in "Zz":
-                polygons.append(points)
-                x, y = points[0]
-                points = []
-                continue
-        relative = command.islower()
-        kind = command.upper()
-        if kind in "ML":
-            dx, dy = float(tokens[i]), float(tokens[i + 1])
-            i += 2
-            x, y = (x + dx, y + dy) if relative else (dx, dy)
-            # After a move, more pairs are lines.
-            command = "l" if relative else "L"
-        elif kind == "H":
-            x = x + float(tokens[i]) if relative else float(tokens[i])
-            i += 1
-        elif kind == "V":
-            y = y + float(tokens[i]) if relative else float(tokens[i])
-            i += 1
-        points.append((x, y))
-    return polygons
-
-
-def x_icon(path):
-    """X's mark in white: the tile itself is black."""
-    size = 256
-    image, draw = canvas(size, size)
-    k = SUPERSAMPLE
-    scale = 144 / 24 * k
-    offset = (size * k - 24 * scale) / 2
-    outline, hole = path_polygons(X_MARK)
-    for points, fill in ((outline, WHITE), (hole, (0, 0, 0, 0))):
-        draw.polygon([(offset + px * scale, offset + py * scale) for px, py in points], fill=fill)
-    finish(image, size, size, path)
-
-
 def store_icon(path):
     """A shopping bag."""
     size = 256
@@ -140,24 +87,8 @@ def store_icon(path):
     finish(image, size, size, path)
 
 
-def airplay_icon(path):
-    """AirPlay's mark: a screen with a triangle rising into the gap at its bottom."""
-    size = 256
-    image, draw = canvas(size, size)
-    k = SUPERSAMPLE
-    stroke = 16 * k
-    draw.rounded_rectangle([36 * k, 44 * k, 220 * k, 178 * k], radius=20 * k, outline=WHITE, width=stroke)
-    # Clear the gap around the triangle (transparent), then draw the triangle.
-    cx = size * k / 2
-    draw.polygon([(cx - 70 * k, 226 * k), (cx + 70 * k, 226 * k), (cx, 124 * k)], fill=(0, 0, 0, 0))
-    draw.polygon([(cx - 46 * k, 214 * k), (cx + 46 * k, 214 * k), (cx, 148 * k)], fill=WHITE)
-    finish(image, size, size, path)
-
-
 if __name__ == "__main__":
     package_logos()
     youtube_icon(f"{ROOT}/Apps/youtube.png")
-    x_icon(f"{ROOT}/Apps/x.png")
     store_icon(f"{ROOT}/Apps/store.png")
-    airplay_icon(f"{ROOT}/Apps/airplay.png")
     logo(256, 256, 150, f"{ROOT}/Apps/openbox.png", background=(0, 0, 0, 0))

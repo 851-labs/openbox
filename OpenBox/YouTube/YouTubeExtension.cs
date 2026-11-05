@@ -39,11 +39,6 @@ namespace OpenBox.YouTube
             get { return _filters?.UserAgent ?? TvUserAgent; }
         }
 
-        public bool HandlesInput
-        {
-            get { return false; }
-        }
-
         public async Task AttachAsync(CoreWebView2 core)
         {
             _filters = await FilterList.LoadAsync();
