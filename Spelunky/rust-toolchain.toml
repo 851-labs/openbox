@@ -1,0 +1,4 @@
+# The game's own toolchain (github.com/851-labs/spelunky's rust-toolchain.toml at the tag in Cargo.toml).
+[toolchain]
+channel = "1.98.1"
+targets = ["x86_64-pc-windows-msvc"]

@@ -14,7 +14,7 @@ namespace OpenBox.Apps
     ///  - a native app built into openbox (<see cref="PageType"/>), a XAML page of its own;
     ///  - an app package of its own (<see cref="Package"/>), which the Store installs on the console
     ///    and the tile launches (Minecraft, through Bandit Launcher).
-    /// Store apps are web apps or packages.
+    /// Store apps are web apps, packages, or native apps the Store adds (<see cref="NativeName"/>).
     /// </summary>
     public sealed class AppEntry
     {
@@ -30,6 +30,9 @@ namespace OpenBox.Apps
 
         /// <summary>The XAML page of a native app; null for web apps.</summary>
         internal Type PageType { get; private set; }
+
+        /// <summary>A native store app's "native": which built-in page it is (<see cref="BuiltInApps.NativeStorePage"/>).</summary>
+        internal string NativeName { get; private set; }
 
         /// <summary>Where a web app starts.</summary>
         public string Url { get; private set; }
@@ -110,7 +113,17 @@ namespace OpenBox.Apps
                 Color = ParseColor(GetString(json, "color")),
                 Credit = GetString(json, "credit"),
             };
-            if (package.ValueType == JsonValueType.Object)
+            var native = GetString(json, "native");
+            if (native != null)
+            {
+                app.PageType = BuiltInApps.NativeStorePage(native);
+                if (app.PageType == null)
+                {
+                    return null;
+                }
+                app.NativeName = native;
+            }
+            else if (package.ValueType == JsonValueType.Object)
             {
                 app.Package = AppPackage.FromJson(package.GetObject());
                 if (app.Package == null)
@@ -139,7 +152,11 @@ namespace OpenBox.Apps
             json.SetNamedValue("name", JsonValue.CreateStringValue(Name));
             json.SetNamedValue("description", JsonValue.CreateStringValue(Description ?? string.Empty));
             json.SetNamedValue("color", JsonValue.CreateStringValue(string.Format("#{0:X2}{1:X2}{2:X2}", Color.R, Color.G, Color.B)));
-            if (Package != null)
+            if (NativeName != null)
+            {
+                json.SetNamedValue("native", JsonValue.CreateStringValue(NativeName));
+            }
+            else if (Package != null)
             {
                 json.SetNamedValue("package", Package.ToJson());
             }

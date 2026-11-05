@@ -107,6 +107,42 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           Copy-Item build\airplay\Release\airplay.dll OpenBox\AirPlay\airplay.dll
 
+      # The game (Spelunky/): spelunky.dll, the port built from its release tag. Its build only changes
+      # with Spelunky/, so it's cached.
+      - name: Restore Spelunky's build
+        id: spelunky-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            Spelunky/target
+          key: spelunky-${{ hashFiles('Spelunky/Cargo.lock', 'Spelunky/rust-toolchain.toml') }}-${{ hashFiles('Spelunky/src/**', 'Spelunky/build.sh') }}
+          restore-keys: spelunky-${{ hashFiles('Spelunky/Cargo.lock', 'Spelunky/rust-toolchain.toml') }}-
+
+      - name: Build Spelunky
+        shell: bash
+        run: |
+          # The DLL and the game files the page downloads must come from the same release.
+          tags=$(grep -o 'tag = "v[^"]*"' Spelunky/Cargo.toml | sort -u)
+          version=$(grep -o 'Version = "[^"]*"' OpenBox/Spelunky/SpelunkyAssets.cs | cut -d'"' -f2)
+          if [ "$tags" != "tag = \"v$version\"" ]; then
+            echo "::error::Spelunky/Cargo.toml's tags ($tags) and SpelunkyAssets.Version ($version) differ"
+            exit 1
+          fi
+          Spelunky/build.sh --locked
+          cp Spelunky/target/x86_64-pc-windows-msvc/release/spelunky.dll OpenBox/Spelunky/spelunky.dll
+
+      - name: Save Spelunky's build
+        if: steps.spelunky-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            Spelunky/target
+          key: ${{ steps.spelunky-cache.outputs.cache-primary-key }}
+
       - name: Create signing certificate
         shell: pwsh
         run: |
@@ -145,7 +181,8 @@ jobs:
           try { $entries = $zip.Entries | ForEach-Object { $_.FullName } } finally { $zip.Dispose() }
           $required = @('Web/Inject/prelude.js', 'Web/Inject/remote.js', 'YouTube/Inject/adblock.js',
             'YouTube/Inject/upgrade.js', 'YouTube/Inject/filters.json', 'Assets/Apps/youtube.png',
-            'AdBlock/Inject/cosmetic.js', 'AdBlock/adblock.json', 'airplay.dll', 'Assets/Apps/airplay.png')
+            'AdBlock/Inject/cosmetic.js', 'AdBlock/adblock.json', 'airplay.dll', 'Assets/Apps/airplay.png',
+            'spelunky.dll', 'Assets/Apps/spelunky.png')
           $missing = $required | Where-Object { $entries -notcontains $_ }
           if ($missing) { throw "Missing from package: $($missing -join ', ')" }
           New-Item -ItemType Directory release\Dependencies -Force | Out-Null

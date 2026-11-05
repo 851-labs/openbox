@@ -80,6 +80,11 @@
     <Compile Include="Packages\AppPackage.cs" />
     <Compile Include="Packages\PackageApps.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Spelunky\SpelunkyAssets.cs" />
+    <Compile Include="Spelunky\SpelunkyNative.cs" />
+    <Compile Include="Spelunky\SpelunkyPage.xaml.cs">
+      <DependentUpon>SpelunkyPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Store\StoreIndex.cs" />
     <Compile Include="Store\StorePage.xaml.cs">
       <DependentUpon>StorePage.xaml</DependentUpon>
@@ -113,6 +118,11 @@
     <Content Include="AirPlay\airplay.dll" Condition="Exists('AirPlay\airplay.dll')">
       <Link>airplay.dll</Link>
     </Content>
+    <!-- The game, from Spelunky/: CI builds it and copies it here first. Its files aren't in the
+         package: the page downloads them from the game's release (Spelunky/SpelunkyAssets.cs). -->
+    <Content Include="Spelunky\spelunky.dll" Condition="Exists('Spelunky\spelunky.dll')">
+      <Link>spelunky.dll</Link>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
@@ -124,6 +134,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Home\HomePage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Spelunky\SpelunkyPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

@@ -29,6 +29,22 @@ In every app, View goes back to the homescreen. B goes back a page (with `"remot
 
 Every app gets OpenBox's ad blocker; there's nothing to set.
 
+## Native apps
+
+A few apps are built into OpenBox but only on the homescreen once they're added from the Store. Their entry has a `native` instead of a `url`, naming the app (`tools/build_store.py` and `OpenBox/Apps/BuiltInApps.cs` list them). Spelunky is one:
+
+```json
+{
+  "name": "Spelunky",
+  "description": "Spelunky Classic, with the controller. An unofficial port of the original.",
+  "native": "spelunky",
+  "icon": "icons/spelunky.png",
+  "color": "#8C5A2B"
+}
+```
+
+OpenBox versions without the app don't show it in their Store.
+
 ## Package apps
 
 An app can also be an app package of its own (an `.appx` or `.msix`) instead of a web page. Installing it from the Store downloads the package, checks it, installs it on the console with PackageManager, and adds a tile that opens it. Instead of `url`, `input` and `userAgent` it has a `package`:

@@ -1,0 +1,8 @@
+{
+  "name": "Spelunky",
+  "description": "Spelunky Classic, with the controller. An unofficial port of the original.",
+  "native": "spelunky",
+  "icon": "icons/spelunky.png",
+  "color": "#8C5A2B",
+  "credit": "Spelunky Classic by Derek Yu. Unofficial port: github.com/851-labs/spelunky"
+}

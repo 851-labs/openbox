@@ -1,0 +1,46 @@
+# spelunky.dll: Spelunky Classic, built into OpenBox (OpenBox/Spelunky/SpelunkyPage.xaml.cs loads it).
+#
+# The game is 851 Labs' port of Spelunky Classic 1.1 (github.com/851-labs/spelunky), used as it is, from a
+# release tag: this crate only hosts it in OpenBox's window (a SwapChainPanel), reads the console's
+# controller and keeps its saves. The game's assets come from the same release (see README.md).
+[package]
+name = "spelunky-openbox"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+name = "spelunky"
+crate-type = ["cdylib"]
+
+[dependencies]
+# Keep these on one tag, the one SpelunkyAssets.cs downloads the assets of.
+app = { git = "https://github.com/851-labs/spelunky", tag = "v0.1.19" }
+assets = { git = "https://github.com/851-labs/spelunky", tag = "v0.1.19" }
+gm = { git = "https://github.com/851-labs/spelunky", tag = "v0.1.19" }
+draw = { git = "https://github.com/851-labs/spelunky", tag = "v0.1.19" }
+trace = { git = "https://github.com/851-labs/spelunky", tag = "v0.1.19" }
+# The game's sound device library (through kira), only to check there's a device before the game opens it.
+cpal = "0.18"
+log = "0.4"
+pollster = "0.4"
+# The game's own wgpu, for Direct3D 12 only.
+wgpu = { version = "30", default-features = false, features = ["std", "parking_lot", "dx12", "wgsl"] }
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62", features = [
+    "Foundation_Collections",
+    "Gaming_Input",
+    "Win32_Foundation",
+    "Win32_System_Com",
+    "Win32_Graphics_DirectComposition",
+    "Win32_Security",
+    "Win32_System_Console",
+    "Win32_System_WinRT_Composition",
+    "UI_Composition",
+] }
+windows-numerics = "0.3"
+
+[profile.release]
+# Line tables, so a panic's backtrace in the log names the code.
+debug = "line-tables-only"

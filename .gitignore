@@ -22,6 +22,9 @@ _site/
 OpenBox/AdBlock/adblock.json
 /build/
 OpenBox/AirPlay/airplay.dll
+# The game (Spelunky/, copied into the app by CI)
+OpenBox/Spelunky/spelunky.dll
+/Spelunky/target/
 
 # Python
 __pycache__/

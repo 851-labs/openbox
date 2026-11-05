@@ -8,6 +8,7 @@ using OpenBox.Apps;
 using OpenBox.Packages;
 using OpenBox.Store;
 using OpenBox.Web;
+using Windows.Data.Json;
 using Windows.Gaming.Input;
 using Windows.Management.Deployment;
 using Windows.Security.Credentials;
@@ -25,7 +26,7 @@ namespace OpenBox.Diagnostics
     /// way to press buttons. A line saved as LocalState\dev-command.txt (Device Portal's file
     /// explorer can upload it) is run, then the file deleted; what happens goes to the log.
     ///
-    ///   open &lt;id&gt;      open a homescreen app, as A on its tile
+    ///   open &lt;id&gt;      open a homescreen app, as A on its tile (or a native store app, added or not)
     ///   install &lt;id&gt;   install a store app, as A on it in the Store
     ///   uninstall &lt;id&gt; uninstall a homescreen app and its package, without asking
     ///   home           go back to the homescreen
@@ -38,7 +39,9 @@ namespace OpenBox.Diagnostics
     ///   hidekeyboard   close the console's keyboard, as its B button would
     ///   pad &lt;button&gt;...  a real controller press, injected into the console's input (so the
     ///                  console's keyboard gets it too): a, b, x, y, up, down, left, right, menu,
-    ///                  view, lb, rb, lt, rt, each optionally *n (right*4); 0.35 s apart. Needs
+    ///                  view, lb, rb, lt, rt, each optionally *n (right*4); 0.35 s apart. Buttons
+    ///                  joined with + are held together, :ms holds them that long (right+rt:1500),
+    ///                  and wait:ms presses nothing (a game's controller test, say). Needs
     ///                  the inputInjectionBrokered capability, which the workflow adds to Debug
     ///                  builds only
     /// </summary>
@@ -88,33 +91,40 @@ namespace OpenBox.Diagnostics
             }
             foreach (var press in presses)
             {
+                // button[+button...][:ms][*n]: held together, for ms (120 by default), n times.
                 var parts = press.Split('*');
                 var times = parts.Length > 1 ? int.Parse(parts[1]) : 1;
+                var held = parts[0].Split(':');
+                var hold = held.Length > 1 ? int.Parse(held[1]) : 120;
                 var info = new InjectedInputGamepadInfo();
-                switch (parts[0])
+                foreach (var button in held[0].Split('+'))
                 {
-                    case "a": info.Buttons = GamepadButtons.A; break;
-                    case "b": info.Buttons = GamepadButtons.B; break;
-                    case "x": info.Buttons = GamepadButtons.X; break;
-                    case "y": info.Buttons = GamepadButtons.Y; break;
-                    case "up": info.Buttons = GamepadButtons.DPadUp; break;
-                    case "down": info.Buttons = GamepadButtons.DPadDown; break;
-                    case "left": info.Buttons = GamepadButtons.DPadLeft; break;
-                    case "right": info.Buttons = GamepadButtons.DPadRight; break;
-                    case "menu": info.Buttons = GamepadButtons.Menu; break;
-                    case "view": info.Buttons = GamepadButtons.View; break;
-                    case "lb": info.Buttons = GamepadButtons.LeftShoulder; break;
-                    case "rb": info.Buttons = GamepadButtons.RightShoulder; break;
-                    case "lt": info.LeftTrigger = 1; break;
-                    case "rt": info.RightTrigger = 1; break;
-                    default:
-                        Log.Write("pad: no button " + parts[0]);
-                        return;
+                    switch (button)
+                    {
+                        case "a": info.Buttons |= GamepadButtons.A; break;
+                        case "b": info.Buttons |= GamepadButtons.B; break;
+                        case "x": info.Buttons |= GamepadButtons.X; break;
+                        case "y": info.Buttons |= GamepadButtons.Y; break;
+                        case "up": info.Buttons |= GamepadButtons.DPadUp; break;
+                        case "down": info.Buttons |= GamepadButtons.DPadDown; break;
+                        case "left": info.Buttons |= GamepadButtons.DPadLeft; break;
+                        case "right": info.Buttons |= GamepadButtons.DPadRight; break;
+                        case "menu": info.Buttons |= GamepadButtons.Menu; break;
+                        case "view": info.Buttons |= GamepadButtons.View; break;
+                        case "lb": info.Buttons |= GamepadButtons.LeftShoulder; break;
+                        case "rb": info.Buttons |= GamepadButtons.RightShoulder; break;
+                        case "lt": info.LeftTrigger = 1; break;
+                        case "rt": info.RightTrigger = 1; break;
+                        case "wait": break;
+                        default:
+                            Log.Write("pad: no button " + button);
+                            return;
+                    }
                 }
                 for (var i = 0; i < times; i++)
                 {
                     _injector.InjectGamepadInput(info);
-                    await Task.Delay(120);
+                    await Task.Delay(hold);
                     _injector.InjectGamepadInput(new InjectedInputGamepadInfo());
                     await Task.Delay(350);
                 }
@@ -132,7 +142,22 @@ namespace OpenBox.Diagnostics
                 switch (parts[0])
                 {
                     case "open":
-                        App.Open((await AppLibrary.GetHomeAppsAsync()).First(app => app.Id == id));
+                        // Or a native store app that isn't on the homescreen (before it's in the
+                        // published store, say).
+                        var opened = (await AppLibrary.GetHomeAppsAsync()).FirstOrDefault(app => app.Id == id);
+                        if (opened == null)
+                        {
+                            var native = new JsonObject();
+                            native.SetNamedValue("id", JsonValue.CreateStringValue(id));
+                            native.SetNamedValue("name", JsonValue.CreateStringValue(id));
+                            native.SetNamedValue("native", JsonValue.CreateStringValue(id));
+                            opened = AppEntry.FromJson(native);
+                        }
+                        if (opened == null)
+                        {
+                            throw new Exception("no app " + id + " on the homescreen, and no native app of that name");
+                        }
+                        App.Open(opened);
                         break;
                     case "install":
                         var storeApp = (await StoreIndex.LoadAsync()).First(app => app.Id == id);

@@ -24,10 +24,12 @@ ID = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 COLOR = re.compile(r"^#[0-9A-Fa-f]{6}$")
 # Built into openbox; a store app can't take their place.
 RESERVED = {"youtube", "store", "airplay", "openbox"}
-# Every app has these, and either a web app's url or a package app's package.
+# Native apps built into OpenBox that the Store adds to the homescreen (BuiltInApps.NativeStorePage).
+NATIVE = {"spelunky"}
+# Every app has these, and either a web app's url, a package app's package or a native app's native.
 REQUIRED = {"name", "description", "icon", "color"}
 WEB_FIELDS = {"url", "input", "userAgent"}
-OPTIONAL = WEB_FIELDS | {"package", "credit"}
+OPTIONAL = WEB_FIELDS | {"package", "native", "credit"}
 PACKAGE_FIELDS = {"url", "sha256Url", "familyName", "appId"}
 HTTPS = re.compile(r"^https://[^\s/]+\.[^\s/]+(/\S*)?$")
 # Name_PublisherId, as Windows writes package family names.
@@ -71,10 +73,16 @@ def check_app(file_name):
         error(f'"{key}" is missing')
     for key in sorted(app.keys() - REQUIRED - OPTIONAL):
         error(f'unknown field "{key}"')
-    if package is None and "url" not in app:
+    native = app.get("native")
+    if package is None and native is None and "url" not in app:
         error('"url" is missing (or "package", for an app package)')
-    if package is not None and app.keys() & WEB_FIELDS:
-        error('a package app has "package" instead of ' + ", ".join(f'"{k}"' for k in sorted(app.keys() & WEB_FIELDS)))
+    if package is not None and native is not None:
+        error('an app has "package" or "native", not both')
+    for kind, value in (("package", package), ("native", native)):
+        if value is not None and app.keys() & WEB_FIELDS:
+            error(f'a {kind} app has "{kind}" instead of ' + ", ".join(f'"{k}"' for k in sorted(app.keys() & WEB_FIELDS)))
+    if native is not None and (not isinstance(native, str) or native not in NATIVE):
+        error(f'"native" must be one of the native apps built into OpenBox: {", ".join(sorted(NATIVE))}')
     for key, value in app.items():
         if key != "package" and (not isinstance(value, str) or not value.strip()):
             error(f'"{key}" must be a non-empty string')
@@ -126,6 +134,8 @@ def check_app(file_name):
     }
     if package is not None:
         entry["package"] = {"appId": "App", **package}
+    elif native is not None:
+        entry["native"] = native
     else:
         entry["url"] = app["url"]
         entry["input"] = app.get("input", "pointer")

@@ -87,8 +87,27 @@ def store_icon(path):
     finish(image, size, size, path)
 
 
+def spelunky_icon(path):
+    """A cave's mouth with a gem inside: drawn here, not the game's art (its assets aren't in this repo)."""
+    size = 256
+    image, draw = canvas(size, size)
+    k = SUPERSAMPLE
+    stroke = 16 * k
+    # The cave: a wide arch on the ground.
+    draw.arc([40 * k, 52 * k, 216 * k, 228 * k], start=180, end=360, fill=WHITE, width=stroke)
+    draw.rectangle([40 * k, 140 * k, 40 * k + stroke, 204 * k], fill=WHITE)
+    draw.rectangle([216 * k - stroke, 140 * k, 216 * k, 204 * k], fill=WHITE)
+    draw.rounded_rectangle([20 * k, 196 * k, 236 * k, 212 * k], radius=8 * k, fill=WHITE)
+    # The gem in it, cut as a diamond, sitting on the floor.
+    cx, top = 128 * k, 128 * k
+    draw.polygon([(cx - 34 * k, top + 20 * k), (cx - 18 * k, top), (cx + 18 * k, top), (cx + 34 * k, top + 20 * k),
+                  (cx, top + 60 * k)], fill=WHITE)
+    finish(image, size, size, path)
+
+
 if __name__ == "__main__":
     package_logos()
     youtube_icon(f"{ROOT}/Apps/youtube.png")
     store_icon(f"{ROOT}/Apps/store.png")
+    spelunky_icon(f"{ROOT}/Apps/spelunky.png")
     logo(256, 256, 150, f"{ROOT}/Apps/openbox.png", background=(0, 0, 0, 0))
