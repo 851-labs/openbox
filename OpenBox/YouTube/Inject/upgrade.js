@@ -11,9 +11,61 @@
  *    on each tile; the same one is added (the values are the ones YouTube sends a Chromecast).
  * The app build YouTube serves that device also misplaces the video in Shorts (fitShorts) and
  * draws black boxes behind text (fixLegacyLook). Its missing animations are turned back on by
- * the address the app opens (env_forceFullAnimation, YouTubeExtension.cs).
+ * the address the app opens (env_forceFullAnimation, YouTubeExtension.cs). Its player also
+ * leaves out every 60 fps format (allowHighFrameRates) and, on livestreams, VP9
+ * (playerSeesChromium), which together kept livestreams at 480p.
  */
 (function () {
+    /* The TV player only offers 60 fps formats where it can ask the browser about frame rates:
+       it asks MediaSource.isTypeSupported('video/webm; codecs="vp9"; framerate=30') and then
+       framerate=9999, and trusts the answers only if the impossible one is refused. Cobalt, the
+       browser YouTube's TV app normally runs in, does that; Chromium (WebView2) ignores the
+       parameter and says yes to both, so the player drops every format above 32 fps ("capHfr").
+       A livestream at 1080p60 has only 30 fps formats up to 480p (720p and 1080p come at 60
+       fps), so it played at 480p; 60 fps videos lost their 720p and 1080p the same way. The
+       console decodes 1080p60 (mediaCapabilities says smooth), so frame rates above 60 are
+       refused here, as Cobalt would, and everything else is left to the browser. */
+    var FRAME_RATE = /;\s*framerate=([\d.]+)/i;
+    function allowHighFrameRates() {
+        if (!window.MediaSource) return;
+        wrapMethod(MediaSource, 'isTypeSupported', function (isTypeSupported) {
+            return function (type) {
+                var rate = typeof type === 'string' && FRAME_RATE.exec(type);
+                if (rate && +rate[1] > 60) return false;
+                return isTypeSupported.apply(this, arguments);
+            };
+        });
+    }
+    allowHighFrameRates();
+
+    /* The user agent ends in Edge/20.02 (the Xbox app's EdgeHTML), so the player takes the
+       browser for old Edge, and on livestreams (segmented streams) it drops VP9 whenever H.264
+       is there too, as old Edge couldn't play VP9 live. H.264 1080p60 then drops about one frame
+       in six here, where VP9 1080p60 drops almost none; mediaCapabilities learns that, and the player
+       settles on 720p60. The player looks at the user agent once, while its script first runs,
+       so only then is it shown without the Edge part: it treats the browser as the Chromium it
+       is. The rest of the app, and what YouTube is sent (the app puts navigator.userAgent in
+       every request), still see the whole user agent. */
+    var PLAYER_SCRIPT = /^https:\/\/www\.youtube\.com\/s\/player\//;
+    var LEGACY_EDGE = / Edge\/[\d.]+/;
+    function playerSeesChromium() {
+        var descriptor = window.Navigator && Object.getOwnPropertyDescriptor(Navigator.prototype, 'userAgent');
+        if (!descriptor || !descriptor.get || !descriptor.configurable) return;
+        var getUserAgent = descriptor.get;
+        var getter = function () {
+            var userAgent = getUserAgent.call(this);
+            var script = document.currentScript;
+            return script && PLAYER_SCRIPT.test(script.src || '') ? userAgent.replace(LEGACY_EDGE, '') : userAgent;
+        };
+        try {
+            Object.defineProperty(getter, 'toString', { value: function () { return 'function get userAgent() { [native code] }'; }, configurable: true });
+            Object.defineProperty(Navigator.prototype, 'userAgent', { get: getter, configurable: true, enumerable: descriptor.enumerable });
+        } catch (e) {
+            log('user agent for the player failed: ' + e);
+        }
+    }
+    playerSeesChromium();
+
     var SMALL_THUMBNAIL = /^https:\/\/i\.ytimg\.com\/vi\/([\w-]{11})\/(?:hq|mq|)default\.jpg/;
     var checked = Object.create(null);
 
