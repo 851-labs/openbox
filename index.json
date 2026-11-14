@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "generated": "2026-11-14T06:26:16Z",
+  "apps": [
+    {
+      "id": "radio-garden",
+      "name": "Radio Garden",
+      "description": "Live radio stations from around the world, on a globe.",
+      "icon": "https://raw.githubusercontent.com/851-labs/openbox/store/icons/radio-garden.png?v=e6e2a69b",
+      "color": "#000000",
+      "url": "https://radio.garden",
+      "input": "pointer"
+    },
+    {
+      "id": "spelunky",
+      "name": "Spelunky",
+      "description": "Spelunky Classic, with the controller. An unofficial port of the original.",
+      "icon": "https://raw.githubusercontent.com/851-labs/openbox/store/icons/spelunky.png?v=73d6cb66",
+      "color": "#8C5A2B",
+      "native": "spelunky",
+      "credit": "Spelunky Classic by Derek Yu. Unofficial port: github.com/851-labs/spelunky"
+    },
+    {
+      "id": "twitch",
+      "name": "Twitch",
+      "description": "Live streams, mostly of games, in Twitch's TV app.",
+      "icon": "https://raw.githubusercontent.com/851-labs/openbox/store/icons/twitch.png?v=268fd5c2",
+      "color": "#9146FF",
+      "url": "https://olivine.tv.twitch.tv/",
+      "input": "remote"
+    }
+  ]
+}
